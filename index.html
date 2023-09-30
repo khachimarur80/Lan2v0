@@ -11,7 +11,7 @@
 				height: 100%;
 				width: 100%;
 			}
-			#main {
+			#app {
 				height: 100%;
 				width: 100%;
 			}
@@ -20,7 +20,7 @@
 			}
 			#navbar {
 				height: 60px;
-				background: #ddd;
+				background: #eee;
 				display: flex;
 				justify-content: center;
 				align-items: center;
@@ -47,11 +47,75 @@
 				height: calc(100% - 50px);
 				background: #eee;
 				border-radius: 20px;
+				cursor: crosshair;
+				position: relative;
+			}
+			.concept {
+				position: absolute;
+				border-radius: 5px;
+				padding: 5px;
+				cursor: grab;
+				transform: translate(-50%, -50%);
+			}
+			.relation {
+				position: absolute;
+				min-width: 30px;
+				transform: translate(-50%, -50%);
+			}
+			.relation input {
+				outline: none;
+				border: 1px solid blue;
+				border-radius: 5px;
+				min-width: 30px;
+				padding: 3px;
+			}
+			.concept input {
+				outline: none;
+				border: 1px solid green;
+				border-radius: 5px;
+				min-width: 30px;
+				padding: 3px;
+			}
+			.node {
+				height: 8px;
+				width: 8px;
+				border-radius: 50%;
+				position: absolute;
+				top: 12.5px;
+				right: 2px;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+			}
+			.node:hover {
+				background: black;
+				cursor: pointer;
+			}
+			.node:hover .node-inner {
+				background: white;
+			}
+			.node-inner {
+				height: 6px;
+				width: 6px;
+				border-radius: 50%;
+			}
+			.relation-node .node-inner {
+				background: black;
+			}
+			#generalSVG {
+				position: absolute;
+				top: 0px;
+				left: 0px;
+			}
+			.rectangle {
+				background: rgba(255,0,0,.1);
+				outline: 1px dotted red;
+				position: absolute;
 			}
 		</style>
 	</head>
 	<body>
-		<div id="main">
+		<div id="app">
 			<div id="navbar">
 				<h1>Simple Lan2 Demo</h1>
 			</div>
@@ -72,50 +136,43 @@
 					<button>
 						#--#
 					</button>
+					<button @click="selectingArea=true" v-if="!selectingArea">
+						Area
+					</button>
+					<button @click="selectingArea=false" v-else>
+						No Area
+					</button>
 				</div>
-				<div id="board">
+				<div id="board" @mousedown="boardMouseDown" @mousemove="boardMouseMove" @mouseup="boardMouseUp">
+					<svg id="generalSVG" height="100%" width="100%">
+						<line 
+							v-for="(relation, i) in relations" 
+							:key="i" 
+							:x1="relation.object.x + 20 +'px'"
+							:y1="relation.object.y+'px'"
+							:x2="relation.subject.x + 20 +'px'"
+							:y2="relation.subject.y+'px'"
+							width="1"
+							stroke="black"
+						>
+						</line>
+					</svg>
+					<div v-if="rectangle" class="rectangle" :style="{ top: rectangle.top, left: rectangle.left, width: rectangle.width, height: rectangle.height, } "></div>
+					<div class="concept" v-for="(concept, i) in concepts" :key="i" :style="{ top : concept.y+'px', left : concept.x+'px'}" :data-id="concept.id" ref="concept" draggable="true">
+						<input v-model="concept.name" :style="{width : concept.name.length*12 + 'px'}" @mousedown.stop @focus="focusConcept(concept)">
+						<span class="node" @click="createRelation" @mousedown.stop>
+							<span class="node-inner">
+							</span>
+						</span>
+					</div>
+					<div class="relation" v-for="(relation, i) in relations" :key="i" :style="{ top : (relation.object.y+relation.subject.y)/2 + 'px', left : (relation.object.x+relation.subject.x)/2 + 'px' }" :data-id="relation.id">
+						<input v-model="relation.name" :style="{width : relation.name.length*12 + 'px'}">
+					</div>
+					</div>
 				</div>
 			</div>
 		</div>
-		<script>
-			//The Structure Backend Classes
-			class Concept {
-				constructor() {
-
-				}
-			}
-			class Relation {
-				constructor() {
-
-				}
-			}
-			class Category {
-				constructor() {
-
-				}
-			}
-
-			class Function {
-				constructor() {
-
-				}
-			}
-
-			class Statement {
-				constructor() {
-
-				}
-			}
-			class Condition {
-				constructor() {
-
-				}
-			}
-			class Action {
-				constructor() {
-
-				}
-			}
-		</script>
+		<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+		<script src="index.js"></script>
 	</body>
 </html>
