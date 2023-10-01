@@ -18,6 +18,8 @@ class Relation {
 		this.id = Math.floor(Math.random()*100000)
 		this.subject = null
 		this.object = null
+		this.offsetX = 0
+		this.offsetY = 0
 	}
 }
 class Category {
@@ -28,19 +30,35 @@ class Category {
 	}
 }
 class Statement {
-	constructor(elements) {
+	constructor(type) {
 		this.id = Math.floor(Math.random()*100000)
-		this.elements = elements
+		this.type = type
+		this.items = []
+
+		//Board values
+		this.x = 100
+		this.y = 100
 	}
 }
 class Condition {
 	constructor() {
+		this.id = Math.floor(Math.random()*100000)
+		this.items = []
 
+		//Board values
+		this.x = 100
+		this.y = 100
 	}
 }
 class Action {
 	constructor() {
+		this.id = Math.floor(Math.random()*100000)
+		this.condition = null
+		this.name = ''
 
+		//Board values
+		this.x = 100
+		this.y = 100
 	}
 }
 
@@ -50,20 +68,106 @@ const app = Vue.createApp({
             concepts: [],
             relations: [],
             categories: [],
+            statements: [],
+            conditions: [],
+            actions: [],
             creatingRelation: [],
+            creatingCondition: [],
+            creatingAction: [],
             focusedConcept: null,
             rectangle: null,
             selectingArea: false,
         };
     },
     methods: {
+    	addAction() {
+    		let action = new Action()
+    		action.x = 100
+    		action.y = 100
+
+    		this.actions.push(action)
+
+    		this.$nextTick(()=>{
+				if (this.$refs.action) {
+					this.$refs.action.forEach((actionElement) => {
+						this.dragConcept(actionElement)
+					})
+				}
+			})
+    	},
+    	functionMouseDown(event) {
+    		event.preventDefault()
+    		if (event.target.id=="generalFunctionsSVG") {
+	    		let condition = new Condition()
+	    		condition.x = event.x - event.target.getBoundingClientRect().left
+	    		condition.y = event.y - event.target.getBoundingClientRect().top
+
+	    		this.conditions.push(condition)
+
+	    		this.$nextTick(()=>{
+					if (this.$refs.condition) {
+						this.$refs.condition.forEach((conditionElement) => {
+							this.dragConcept(conditionElement)
+						})
+					}
+				})
+		    }
+    	},
+    	createStatement(type) {
+    		let statement = new Statement(type)
+    		this.statements.push(statement)
+
+    		if (type=='[]') {
+    			statement.items = [['tag', '']]
+    		}
+    		if (type=='#') {
+    			statement.items = [['concept', '']]
+    		}
+    		if (type=='[]--[]') {
+    			statement.items = [['concept', ''],['relation', ''],['concept', '']]
+    		}
+    		if (type=='#--[]') {
+    			statement.items = [['tag', ''],['relation', ''],['concept', '']]
+    		}
+    		if (type=='#--#') {
+    			statement.items = [['tag', ''],['relation', ''],['tag', '']]
+    		}
+
+    		this.$nextTick(()=>{
+				if (this.$refs.statement) {
+					this.$refs.statement.forEach((statementElement) => {
+						this.dragConcept(statementElement)
+					})
+				}
+			})
+    	},
     	focusConcept(concept) {
     		this.focusedConcept = concept
     	},
-    	getConceptById(id) {
+    	getObjectById(id) {
     		for(let i=0; i<this.concepts.length; i++) {
  				if (this.concepts[i].id==id) {
  					return this.concepts[i]
+ 				}
+ 			}
+ 			for(let i=0; i<this.statements.length; i++) {
+ 				if (this.statements[i].id==id) {
+ 					return this.statements[i]
+ 				}
+ 			}
+ 			for(let i=0; i<this.actions.length; i++) {
+ 				if (this.actions[i].id==id) {
+ 					return this.actions[i]
+ 				}
+ 			}
+ 			for(let i=0; i<this.conditions.length; i++) {
+ 				if (this.conditions[i].id==id) {
+ 					return this.conditions[i]
+ 				}
+ 			}
+ 			for(let i=0; i<this.relations.length; i++) {
+ 				if (this.relations[i].id==id) {
+ 					return this.relations[i]
  				}
  			}
     	},
@@ -100,17 +204,61 @@ const app = Vue.createApp({
 		    	}
 		    }
     	},
+    	functionMouseMove(event) {
+    		if (this.creatingCondition[0]) {
+				const functions = document.getElementById('functions').getBoundingClientRect()
+				if (document.getElementById('creating-condition-line')) {
+					let line = document.getElementById('creating-condition-line');
+					line.setAttributeNS(null, 'x2', event.x - functions.left);
+					line.setAttributeNS(null, 'y2', event.y - functions.top);
+				}
+				else {
+					let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+					line.id = 'creating-condition-line'
+					let origin = document.querySelector('[data-id="'+this.creatingCondition[0][0].id+'"]').getBoundingClientRect()
+					line.setAttributeNS(null, 'x1', origin.left + origin.width - functions.left + this.creatingCondition[0][1].x);
+					line.setAttributeNS(null, 'y1', origin.top + origin.height/2 - functions.top + this.creatingCondition[0][1].y);
+					line.setAttributeNS(null, 'x2', event.x - functions.left);
+					line.setAttributeNS(null, 'y2', event.y - functions.top);
+					line.setAttributeNS(null, 'stroke', 'black');
+					line.setAttributeNS(null, 'stroke-width', '1');
+
+					document.getElementById('generalFunctionsSVG').appendChild(line)
+				}
+			}
+			else if (this.creatingAction[0]) {
+				const functions = document.getElementById('functions').getBoundingClientRect()
+				if (document.getElementById('creating-action-line')) {
+					let line = document.getElementById('creating-action-line');
+					line.setAttributeNS(null, 'x2', event.x - functions.left);
+					line.setAttributeNS(null, 'y2', event.y - functions.top);
+				}
+				else {
+					let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+					line.id = 'creating-action-line'
+					let origin = document.querySelector('[data-id="'+this.creatingAction[0][0].id+'"]').getBoundingClientRect()
+					line.setAttributeNS(null, 'x1', origin.left + origin.width/2 - functions.left + this.creatingAction[0][1].x);
+					line.setAttributeNS(null, 'y1', origin.top + origin.height - functions.top + this.creatingAction[0][1].y);
+					line.setAttributeNS(null, 'x2', event.x - functions.left);
+					line.setAttributeNS(null, 'y2', event.y - functions.top);
+					line.setAttributeNS(null, 'stroke', 'black');
+					line.setAttributeNS(null, 'stroke-width', '1');
+
+					document.getElementById('generalFunctionsSVG').appendChild(line)
+				}
+			}
+    	},
     	dragConcept(word) {
 			const vm = this;
 			var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-			var wordObj = this.getConceptById(word.getAttribute('data-id'))
+			var wordObj = this.getObjectById(word.getAttribute('data-id'))
 			var original = [parseInt(wordObj.x), parseInt(wordObj.y)];
 		
 			word.onmousedown = dragMouseDown;
 
 			function dragMouseDown(e) {
 				e.stopPropagation()
-				var wordObj = vm.getConceptById(word.getAttribute('data-id'))
+				var wordObj = vm.getObjectById(word.getAttribute('data-id'))
 
 				e = e || window.event;
 				e.preventDefault();
@@ -121,7 +269,7 @@ const app = Vue.createApp({
 			}
 
 			function elementDrag(e) {
-				var wordObj = vm.getConceptById(word.getAttribute('data-id'))
+				var wordObj = vm.getObjectById(word.getAttribute('data-id'))
 
 				e = e || window.event;
 				e.preventDefault();
@@ -201,20 +349,162 @@ const app = Vue.createApp({
 			}
 			return null;
 		},
-		createRelation(event) {
+		createAction(event) {
 			let element = event.target
-			let conceptTarget = this.getConceptById(element.parentElement.parentElement.getAttribute('data-id'))
 
-			if (!this.creatingRelation[0]) {
+			let conceptTarget = this.getObjectById(element.parentElement.parentElement.getAttribute('data-id'))
+
+			if (!this.creatingAction[0]) {
+				let coords
+				if (event.target.parentElement.classList[1]=='right') {
+					coords = {'x': 18, 'y': 1}
+				}
+				else if (event.target.parentElement.classList[1]=='left') {
+					coords = {'x': -18, 'y': 1}
+				}
+				else if (event.target.parentElement.classList[1]=='up') {
+					coords = {'x': -.5, 'y': -9}
+				}
+				else if (event.target.parentElement.classList[1]=='down') {
+					coords = {'x': -.5, 'y': 9}
+				}
+				else {
+					coords = {'x': 0, 'y': 0}
+				}
+
 				element.parentElement.classList.add('relation-node')
-				this.creatingRelation.push(conceptTarget)
+				this.creatingAction.push([conceptTarget, coords])
 			}
 			else {
+				let coords
+				if (event.target.parentElement.classList[1]=='right') {
+					coords = {'x': 18, 'y': 1}
+				}
+				else if (event.target.parentElement.classList[1]=='left') {
+					coords = {'x': -18, 'y': 1}
+				}
+				else if (event.target.parentElement.classList[1]=='up') {
+					coords = {'x': -.5, 'y': -9}
+				}
+				else if (event.target.parentElement.classList[1]=='down') {
+					coords = {'x': -.5, 'y': 9}
+				}
+				else {
+					coords = {'x': 0, 'y': 0}
+				}
+
 				element.parentElement.classList.add('relation-node')
-				this.creatingRelation.push(conceptTarget)
+				conceptTarget.condition = this.creatingAction[0]
+
+				let line = document.getElementById('creating-action-line');
+				line.remove()
+
+				this.creatingAction = []
+			}
+		},
+		createCondition(event) {
+			let element = event.target
+			let conceptTarget = this.getObjectById(element.parentElement.parentElement.getAttribute('data-id'))
+
+			if (!this.creatingCondition[0]) {
+				let coords
+				if (event.target.parentElement.classList[1]=='right') {
+					coords = {'x': 18, 'y': 1}
+				}
+				else if (event.target.parentElement.classList[1]=='left') {
+					coords = {'x': -18, 'y': 1}
+				}
+				else if (event.target.parentElement.classList[1]=='up') {
+					coords = {'x': -.5, 'y': -9}
+				}
+				else if (event.target.parentElement.classList[1]=='down') {
+					coords = {'x': -.5, 'y': 9}
+				}
+				else {
+					coords = {'x': 0, 'y': 0}
+				}
+
+				element.parentElement.classList.add('relation-node')
+				this.creatingCondition.push([conceptTarget, coords])
+			}
+			else {
+				let coords
+				if (event.target.parentElement.classList[1]=='right') {
+					coords = {'x': 18, 'y': 1}
+				}
+				else if (event.target.parentElement.classList[1]=='left') {
+					coords = {'x': -18, 'y': 1}
+				}
+				else if (event.target.parentElement.classList[1]=='up') {
+					coords = {'x': -.5, 'y': -9}
+				}
+				else if (event.target.parentElement.classList[1]=='down') {
+					coords = {'x': -.5, 'y': 9}
+				}
+				else {
+					coords = {'x': 0, 'y': 0}
+				}
+
+				element.parentElement.classList.add('relation-node')
+
+				conceptTarget.items.push([this.creatingCondition[0], false])
+				conceptTarget.items.push(['and', true])
+
+				let line = document.getElementById('creating-condition-line');
+				line.remove()
+
+				this.creatingCondition = []
+			}
+		},
+		createRelation(event) {
+			let element = event.target
+			let conceptTarget = this.getObjectById(element.parentElement.parentElement.getAttribute('data-id'))
+
+			if (!this.creatingRelation[0]) {
+				let coords
+				if (event.target.parentElement.classList[1]=='right') {
+					coords = {'x': 18, 'y': 1}
+				}
+				else if (event.target.parentElement.classList[1]=='left') {
+					coords = {'x': -18, 'y': 1}
+				}
+				else if (event.target.parentElement.classList[1]=='up') {
+					coords = {'x': -.5, 'y': -9}
+				}
+				else if (event.target.parentElement.classList[1]=='down') {
+					coords = {'x': -.5, 'y': 9}
+				}
+
+				element.parentElement.classList.add('relation-node')
+				this.creatingRelation.push([conceptTarget, coords])
+			}
+			else {
+				let coords
+				if (event.target.parentElement.classList[1]=='right') {
+					coords = {'x': 18, 'y': 1}
+				}
+				else if (event.target.parentElement.classList[1]=='left') {
+					coords = {'x': -18, 'y': 1}
+				}
+				else if (event.target.parentElement.classList[1]=='up') {
+					coords = {'x': -.5, 'y': -9}
+				}
+				else if (event.target.parentElement.classList[1]=='down') {
+					coords = {'x': -.5, 'y': 9}
+				}
+
+				element.parentElement.classList.add('relation-node')
+				this.creatingRelation.push([conceptTarget, coords])
 				let relation = new Relation()
-				relation.object = this.creatingRelation[0]
-				relation.subject = this.creatingRelation[1]
+				relation.object = this.creatingRelation[0][0]
+				relation.subject = this.creatingRelation[1][0]
+
+				relation.object = this.creatingRelation[0][0]
+				relation.subject = this.creatingRelation[1][0]
+				relation.offsetX1 = this.creatingRelation[0][1].x
+				relation.offsetY1 = this.creatingRelation[0][1].y
+				relation.offsetX2 = this.creatingRelation[1][1].x
+				relation.offsetY2 = this.creatingRelation[1][1].y
 
 				let line = document.getElementById('creating-relation-line');
 				line.remove()
@@ -229,15 +519,17 @@ const app = Vue.createApp({
 				const board = document.getElementById('board').getBoundingClientRect()
 				if (document.getElementById('creating-relation-line')) {
 					let line = document.getElementById('creating-relation-line');
-					line.setAttributeNS(null, 'x2', event.x);
-					line.setAttributeNS(null, 'y2', event.y);
+					let board = document.getElementById('board').getBoundingClientRect()
+					line.setAttributeNS(null, 'x2', event.x + board.left - 60);
+					line.setAttributeNS(null, 'y2', event.y - board.top);
 				}
 				else {
 					let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
 					line.id = 'creating-relation-line'
-					let origin = document.querySelector('[data-id="'+this.creatingRelation[0].id+'"]').getBoundingClientRect()
-					line.setAttributeNS(null, 'x1', origin.left - 4 + origin.width);
-					line.setAttributeNS(null, 'y1', origin.top + origin.height/2);
+					let origin = document.querySelector('[data-id="'+this.creatingRelation[0][0].id+'"]').getBoundingClientRect()
+					let board = document.getElementById('board').getBoundingClientRect()
+					line.setAttributeNS(null, 'x1', origin.left + origin.width/2 - board.left + this.creatingRelation[0][1].x);
+					line.setAttributeNS(null, 'y1', origin.top + origin.height/2 - board.top + this.creatingRelation[0][1].y);
 					line.setAttributeNS(null, 'x2', event.x);
 					line.setAttributeNS(null, 'y2', event.y);
 					line.setAttributeNS(null, 'stroke', 'black');
