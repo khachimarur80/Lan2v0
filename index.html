@@ -2,400 +2,254 @@
 <html>
 	<head>
 		<title>Lan2 Demo</title>
-		<style>
-			body, html {
-				font-family: 'HelveticaNeue-Thin';
-				margin: 0px;
-				padding: 0px;
-				overflow: hidden;
-				height: 100%;
-				width: 100%;
-			}
-			#app {
-				height: 100%;
-				width: 100%;
-			}
-			::-webkit-scrollbar {
-				display: none;
-			}
-			#navbar {
-				height: 60px;
-				background: #eee;
-				display: flex;
-				justify-content: center;
-				align-items: center;
-			}
-			#contents {
-				display: flex;
-				height: calc(100% - 120px);
-				flex-direction: column;
-				align-items: center;
-				padding: 30px;
-				gap: 10px;
-			}
-			#toolbar {
-				width: 100%;
-				height: 50px;
-				background: #eee;
-				border-radius: 20px;
-				display: flex;
-				justify-content: space-evenly;
-				align-items: center;
-			}
-			#board {
-				width: 50%;
-				height: 100%;
-				background: #eee;
-				border-radius: 20px;
-				cursor: crosshair;
-				position: relative;
-			}
-			#functions {
-				width: 50%;
-				height: 100%;
-				background: #eee;
-				border-radius: 20px;
-				cursor: crosshair;
-				position: relative;
-			}
-			.concept {
-				position: absolute;
-				border-radius: 5px;
-				padding: 5px;
-				cursor: grab;
-				transform: translate(-50%, -50%);
-			}
-			.concept-inner {
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				padding: 3px;
-			}
-			.concept input {
-				outline: none;
-				border: 1px solid green;
-				border-radius: 5px;
-				min-width: 30px;
-			}
-			.relation {
-				position: absolute;
-				min-width: 30px;
-				transform: translate(-50%, -50%);
-			}
-			.relation input {
-				outline: none;
-				border: 1px solid blue;
-				border-radius: 5px;
-				min-width: 30px;
-				padding: 3px;
-			}
-			.condition {
-				position: absolute;
-				border-radius: 5px;
-				padding: 5px;
-				cursor: grab;
-				transform: translate(-50%, -50%);
-				outline: 1px solid black;
-			}
-			.condition-inner {
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				padding: 3px;
-				width: 70px;
-				position: relative;
-				flex-direction: column;
-				gap: 5px;
-			}
-			.condition input {
-				outline: none;
-				border-radius: 5px;
-				width: 70px;
-				border: none;
-				text-align: center;
-			}
-			.action {
-				position: absolute;
-				border-radius: 5px;
-				padding: 5px;
-				cursor: grab;
-				transform: translate(-50%, -50%);
-				outline: 1px solid black;
-			}
-			.action-inner {
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				padding: 3px;
-				width: 70px;
-				position: relative;
-				flex-direction: column;
-				gap: 5px;
-			}
-			.action input {
-				outline: none;
-				border-radius: 5px;
-				min-width: 30px;
-				border: 1px solid black;
-			}
-
-			.statement {
-				position: absolute;
-				border-radius: 5px;
-				padding: 5px;
-				cursor: grab;
-				transform: translate(-50%, -50%);
-				outline: 1px solid black;
-			}
-			.statement-inner {
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				padding: 3px;
-				gap: 10px;
-				position: relative;
-			}
-			.statement input {
-				outline: none;
-				border-radius: 5px;
-				min-width: 30px;
-			}
-
-			.statement-inner::before {
-				content: "";
-				width: 80%;
-				height: 1px;
-				position: absolute;
-				background: black;
-				z-index: -1;
-			}
-
-			.node {
-				height: 8px;
-				width: 8px;
-				border-radius: 50%;
-				position: absolute;
-				display: flex;
-				transform: translate(-50%, -50%);
-				justify-content: center;
-				align-items: center;
-			}
-			.node.left {
-				top: 18px;
-				left: 8px;
-			}
-			.node.right {
-				top: 18px;
-				right: 0px;
-			}
-			.node.up {
-				top: 8px;
-				left: 26px;
-			}
-			.node.down {
-				bottom: 0px;
-				left: 26px;
-			}
-			.statement-node {
-				top: 18px;
-				right: -8px;
-			}
-			.condition-node {
-				top: 0px;
-				left: 44px;
-			}
-			.action-node {
-				bottom: -8px;
-				left: 44px;
-			}
-
-			.node:hover {
-				background: black;
-				cursor: pointer;
-			}
-			.node:hover .node-inner {
-				background: white;
-			}
-			.node-inner {
-				height: 6px;
-				width: 6px;
-				border-radius: 50%;
-			}
-			.relation-node .node-inner {
-				background: black !important;
-			}
-			#generalSVG {
-				position: absolute;
-				top: 0px;
-				left: 0px;
-			}
-			#generalFunctionsSVG {
-				position: absolute;
-				top: 0px;
-				left: 0px;
-			}
-			.rectangle {
-				background: rgba(255,0,0,.1);
-				outline: 1px dotted red;
-				position: absolute;
-			}
-
-			.statement-concept {
-				border: 1px solid green !important;
-			}
-			.statement-tag {
-				border: 1px solid red !important;
-			}
-			.statement-relation {
-				border: 1px solid blue !important;
-			}
-		</style>
+		<link rel="stylesheet" href="index.css">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vuetify@3.3.15/dist/vuetify.min.css"></link>
+    	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@latest/css/materialdesignicons.min.css" />
 	</head>
 	<body>
 		<div id="app">
-			<div id="navbar">
-				<h1>Simple Lan2 Demo</h1>
-			</div>
-			<div id="contents">
-				<div id="toolbar">
-					<button @click="addAction">
-						Action
-					</button>
-					<button @click="createStatement('[]')">
-						[]
-					</button>
-					<button @click="createStatement('#')">
-						#
-					</button>
-					<button @click="createStatement('[]--[]')">
-						[]--[]
-					</button>
-					<button @click="createStatement('#--[]')">
-						#--[]
-					</button>
-					<button @click="createStatement('#--#')">
-						#--#
-					</button>
-					<button @click="selectingArea=true" v-if="!selectingArea">
-						Area
-					</button>
-					<button @click="selectingArea=false" v-else>
-						No Area
-					</button>
-				</div>
-				<div style="width: 100%;height: calc(100% - 50px);display: flex; gap: 10px">
-					<div id="board" @mousedown="boardMouseDown" @mousemove="boardMouseMove" @mouseup="boardMouseUp">
-						<svg id="generalSVG" height="100%" width="100%">
-							<line 
-								v-for="(relation, i) in relations" 
-								:key="i" 
-								:x1="relation.object.x+relation.offsetX1+'px'"
-								:y1="relation.object.y+relation.offsetY1+'px'"
-								:x2="relation.subject.x+relation.offsetX2+'px'"
-								:y2="relation.subject.y+relation.offsetY2+'px'"
-								width="1"
-								stroke="black"
-							>
-							</line>
-						</svg>
-						<div v-if="rectangle" class="rectangle" :style="{ top: rectangle.top, left: rectangle.left, width: rectangle.width, height: rectangle.height, } "></div>
-						<div class="concept" v-for="(concept, i) in concepts" :key="i" :style="{ top : concept.y+'px', left : concept.x+'px'}" :data-id="concept.id" ref="concept" draggable="true">
-							<div class="concept-inner">
-								<input v-model="concept.name" :style="{width : concept.name.length*12 + 'px'}" @mousedown.stop @focus="focusConcept(concept)">
-							</div>
-							<span class="node up" @mousedown.stop>
-								<span class="node-inner" @click="createRelation">
-								</span>
-							</span>
-							<span class="node down" @mousedown.stop>
-								<span class="node-inner" @click="createRelation">
-								</span>
-							</span>
-							<span class="node right" @mousedown.stop>
-								<span class="node-inner" @click="createRelation">
-								</span>
-							</span>
-							<span class="node left" @mousedown.stop>
-								<span class="node-inner" @click="createRelation">
-								</span>
-							</span>
-						</div>
-						<div class="relation" v-for="(relation, i) in relations" :key="i" :style="{ top : (relation.object.y+relation.subject.y)/2 + 'px', left : (relation.object.x+relation.subject.x)/2 + 'px' }" :data-id="relation.id">
-							<input v-model="relation.name" :style="{width : relation.name.length*12 + 'px'}">
-						</div>
-					</div>
-					<div id="functions" @mousedown="functionMouseDown" @mousemove="functionMouseMove">
-						<svg id="generalFunctionsSVG" height="100%" width="100%">
-							<template v-for="(condition, i) in conditions" :key="i">
-								<template v-for="(item, i) in condition.items" key="i" >
-									<line 
-										v-if="!item[1]"
-										:x1="item[0][0].x+70+'px'"
-										:y1="item[0][0].y+'px'"
-										:x2="condition.x+'px'"
-										:y2="condition.y-30+'px'"
-										width="1"
-										stroke="black"
-									>
-									</line>
-								</template>
-							</template>
-							<template v-for="action in actions">
-								{{ action.condition }}
+			<v-layout>
+				<v-app-bar elevation="0" variant="outlined" color="secondary">
+                    <v-app-bar-nav-icon>
+                        <v-btn flat icon @click.stop="drawer = !drawer">
+                            <v-icon>
+                                mdi-menu
+                            </v-icon>
+                        </v-btn>
+                    </v-app-bar-nav-icon>
+                    <v-spacer></v-spacer>
+                    <v-btn @click="showing='board'" color="error" variant="outlined" class="ml-2 mr-2">
+						Board
+					</v-btn>
+					<v-btn @click="showing='query'" color="success" variant="outlined" class="ml-2 mr-2">
+						Query
+					</v-btn>
+					<v-btn @click="showing='functions'" color="primary" variant="outlined" class="ml-2 mr-2">
+						Function
+					</v-btn>
+					<v-spacer></v-spacer>
+					<v-btn flat icon @click.stop="drawer = !drawer">
+                        <v-icon>
+                            mdi-cog-outline
+                        </v-icon>
+                    </v-btn>
+                </v-app-bar>
+                <v-navigation-drawer
+					v-model="drawer"
+					location="left"
+					elevation="0"
+					:scrim="false"
+					width="100"
+				>	
+					<v-list>
+						<v-list-item>
+							<button @click="addAction">
+								Action
+							</button>
+						</v-list-item>
+						<v-list-item>
+							<button @click="createStatement('[]')">
+								[]
+							</button>
+						</v-list-item>
+						<v-list-item>
+							<button @click="createStatement('#')">
+								#
+							</button>
+						</v-list-item>
+						<v-list-item>
+							<button @click="createStatement('[]--[]')">
+								[]--[]
+							</button>
+						</v-list-item>
+						<v-list-item>
+							<button @click="createStatement('#--[]')">
+								#--[]
+							</button>
+						</v-list-item>
+						<v-list-item>
+							<button @click="createStatement('#--#')">
+								#--#
+							</button>
+						</v-list-item>
+						<v-list-item>
+							<button @click="selectingArea=true" v-if="!selectingArea">
+								Area
+							</button>
+							<button @click="selectingArea=false" v-else>
+								No Area
+							</button>
+						</v-list-item>
+					</v-list>
+				</v-navigation-drawer>
+
+				<v-main>
+					<div id="contents">
+						<div id="board" @mousedown="boardMouseDown" @mousemove="boardMouseMove" @mouseup="boardMouseUp" v-if="showing=='board'">
+							<svg id="generalSVG" height="100%" width="100%">
 								<line 
-									v-if="action.condition"
-									:x1="action.condition[0].x+'px'"
-									:y1="action.condition[0].y + 30+'px'"
-									:x2="action.x+'px'"
-									:y2="action.y+20+'px'"
+									v-for="(relation, i) in relations" 
+									:key="i" 
+									:x1="relation.object.x+relation.offsetX1+'px'"
+									:y1="relation.object.y+relation.offsetY1+'px'"
+									:x2="relation.subject.x+relation.offsetX2+'px'"
+									:y2="relation.subject.y+relation.offsetY2+'px'"
 									width="1"
-									stroke="black"
+									stroke="white"
 								>
-							</line>
-						</svg>
-						<div class="statement" v-for="(statement, i) in statements" :key="i" :style="{ top : statement.y+'px', left : statement.x+'px'}" :data-id="statement.id" ref="statement" draggable="true">
-							<div class="statement-inner">
-								<input v-for="(item, i) in statement.items" @mousedown.stop style="width: 0px" v-model="item[1]" :class="'statement-'+item[0]">
+								</line>
+							</svg>
+							<div v-if="rectangle" class="rectangle" :style="{ top: rectangle.top, left: rectangle.left, width: rectangle.width, height: rectangle.height, } "></div>
+							<div class="concept" v-for="(concept, i) in concepts" :key="i" :style="{ top : concept.y+'px', left : concept.x+'px'}" :data-id="concept.id" ref="concept" draggable="true">
+								<div class="concept-toolbar" v-if="focusedItem==concept">
+									<v-btn @click="addTagFlag=true" v-if="!addTagFlag" density="comfortable" size="small" icon flat>
+										<v-icon>
+											mdi-pound
+										</v-icon>
+									</v-btn>
+									<input v-model="addingTag" v-else class="addTag" @mousedown.stop autofocus @keydown.enter="addTag(concept)">
+									<v-btn density="comfortable" size="small" icon>
+										<v-icon>
+											mdi-information
+										</v-icon>
+									</v-btn>
+									<v-btn density="comfortable" size="small" icon>
+										<v-icon>
+											mdi-file
+										</v-icon>
+									</v-btn>
+									<v-btn density="comfortable" size="small" icon>
+										<v-icon>
+											mdi-image
+										</v-icon>
+									</v-btn>
+								</div>
+								<div class="concept-inner">
+									<input v-model="concept.name" @mousedown.stop @focus="focusItem(concept)">
+								</div>
+								<div class="concept-info">
+									<span v-for="category in concept.categories">{{ category.name }}</span>
+								</div>
+								<span class="node up" @mousedown.stop>
+									<span class="node-inner" @click="createRelation">
+									</span>
+								</span>
+								<span class="node down" @mousedown.stop>
+									<span class="node-inner" @click="createRelation">
+									</span>
+								</span>
+								<span class="node right" @mousedown.stop>
+									<span class="node-inner" @click="createRelation">
+									</span>
+								</span>
+								<span class="node left" @mousedown.stop>
+									<span class="node-inner" @click="createRelation">
+									</span>
+								</span>
 							</div>
-							<span class="node statement-node" @mousedown.stop>
-								<span class="node-inner" @click="createCondition">
-								</span>
-							</span>
-						</div>
-						<div class="condition" v-for="(condition, i) in conditions" :key="i" :style="{ top : condition.y+'px', left : condition.x+'px'}" :data-id="condition.id" ref="condition" draggable="true">
-							<span class="node condition-node" @mousedown.stop>
-								<span class="node-inner" @click="createCondition">
-								</span>
-							</span>
-							<span class="node action-node" @mousedown.stop>
-								<span class="node-inner" @click="createAction">
-								</span>
-							</span>
-							<div class="condition-inner">
-								<div v-for="(item, i) in condition.items" :key="i" style="width:100%;">
-									<div v-if="item[1]">
-										<input @mousedown.stop v-model="item[0]" :disabled="!item[1]">
-									</div>
-									<div v-else style="display: flex; justify-content: space-evenly; width:100%;">
-										<span v-for="i in item[0][0].items">{{ i[1] }}</span>
-									</div>
+							<div class="relation" v-for="(relation, i) in relations" :key="i" :style="{ top : (relation.object.y+relation.subject.y)/2 + 'px', left : (relation.object.x+relation.subject.x)/2 + 'px' }" :data-id="relation.id">
+								<div class="relation-toolbar" v-if="focusedItem==relation">
+									<button @click="addTagFlag=true" v-if="!addTagFlag">
+										#
+									</button>
+									<input v-model="addingTag" v-else class="addTag" @mousedown.stop autofocus @keydown.enter="addTag(relation)">
+									<button>
+										i
+									</button>
+									<button>
+										o
+									</button>
+								</div>
+								<input v-model="relation.name" @focus="focusItem(relation)">
+								<div class="relation-info">
+									<span v-for="category in relation.categories">{{ category.name }}</span>
 								</div>
 							</div>
 						</div>
-						<div class="action" v-for="(action, i) in actions" :key="i" :style="{ top : action.y+'px', left : action.x+'px'}" :data-id="action.id" ref="action" draggable="true">
-							<span class="node action-node" @mousedown.stop>
-								<span class="node-inner" @click="createAction">
+						<div id="functions" @mousedown="functionMouseDown" @mousemove="functionMouseMove" v-if="showing=='functions'">
+							<svg id="generalFunctionsSVG" height="100%" width="100%">
+								<template v-for="(condition, i) in conditions" :key="i">
+									<template v-for="(item, i) in condition.items" key="i" >
+										<line 
+											v-if="!item[1]"
+											:x1="item[0][0].x+70+'px'"
+											:y1="item[0][0].y+'px'"
+											:x2="condition.x+'px'"
+											:y2="condition.y-30+'px'"
+											width="1"
+											stroke="white"
+										>
+										</line>
+									</template>
+								</template>
+								<template v-for="action in actions">
+									{{ action.condition }}
+									<line 
+										v-if="action.condition"
+										:x1="action.condition[0].x+'px'"
+										:y1="action.condition[0].y + 30+'px'"
+										:x2="action.x+'px'"
+										:y2="action.y+20+'px'"
+										width="1"
+										stroke="white"
+									>
+								</line>
+							</svg>
+							<div class="statement" v-for="(statement, i) in statements" :key="i" :style="{ top : statement.y+'px', left : statement.x+'px'}" :data-id="statement.id" ref="statement" draggable="true">
+								<div class="statement-inner">
+									<input v-for="(item, i) in statement.items" @mousedown.stop style="width: 0px" v-model="item[1]" :class="'statement-'+item[0]">
+								</div>
+								<span class="node statement-node" @mousedown.stop>
+									<span class="node-inner" @click="createCondition">
+									</span>
 								</span>
-							</span>
-							<div class="condition-inner">
-								<input @mousedown.stop v-model="action.name" style="width: 0px">
+							</div>
+							<div class="condition" v-for="(condition, i) in conditions" :key="i" :style="{ top : condition.y+'px', left : condition.x+'px'}" :data-id="condition.id" ref="condition" draggable="true">
+								<span class="node condition-node" @mousedown.stop>
+									<span class="node-inner" @click="createCondition">
+									</span>
+								</span>
+								<span class="node action-node" @mousedown.stop>
+									<span class="node-inner" @click="createAction">
+									</span>
+								</span>
+								<div class="condition-inner">
+									<div v-for="(item, i) in condition.items" :key="i" style="width:100%;">
+										<div v-if="item[1]">
+											<input @mousedown.stop v-model="item[0]" :disabled="!item[1]">
+										</div>
+										<div v-else style="display: flex; justify-content: space-evenly; width:100%;">
+											<span v-for="i in item[0][0].items">{{ i[1] }}</span>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="action" v-for="(action, i) in actions" :key="i" :style="{ top : action.y+'px', left : action.x+'px'}" :data-id="action.id" ref="action" draggable="true">
+								<span class="node action-node" @mousedown.stop>
+									<span class="node-inner" @click="createAction">
+									</span>
+								</span>
+								<div class="condition-inner">
+									<input @mousedown.stop v-model="action.name" style="width: 0px">
+								</div>
 							</div>
 						</div>
-				</div>
-				</div>
-			</div>
+						<div id="query" v-if="showing=='query'">
+							<div id="filter">
+								<div v-for="concept in concepts" @click="selectedQuery=concept" style="color: green;">{{ concept.name }}#{{ concept.id }}</div>
+								<div v-for="relation in relations" @click="selectedQuery=relation" style="color: blue;">{{ relation.name }}#{{ relation.id }}</div>
+								<div v-for="category in categories" @click="selectedQuery=category" style="color: red;">{{ category.name }}#{{ category.id }}</div>
+							</div>
+							<div id="data">
+								{{ selectedQuery }}
+							</div>
+						</div>
+					</div>
+				</v-main>
+			</v-layout>
 		</div>
 		<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    	<script src="https://cdn.jsdelivr.net/npm/vuetify@3.3.15/dist/vuetify.min.js"></script>
 		<script src="index.js"></script>
 	</body>
 </html>

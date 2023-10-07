@@ -3,6 +3,7 @@ class Concept {
 	constructor() {
 		this.name = ''
 		this.id = Math.floor(Math.random()*100000)
+		this.info = 'Text file, Image file or API ...'
 
 		//Board values
 		this.x = 0
@@ -10,6 +11,7 @@ class Concept {
 
 		//Attributes for easier parsing
 		this.relations = []
+		this.categories = []
 	}
 }
 class Relation {
@@ -20,11 +22,14 @@ class Relation {
 		this.object = null
 		this.offsetX = 0
 		this.offsetY = 0
+
+		//Attributes for easier parsing
+		this.categories = []
 	}
 }
 class Category {
-	constructor() {
-		this.name = ''
+	constructor(name) {
+		this.name = name
 		this.id = Math.floor(Math.random()*100000)
 		this.objects = []
 	}
@@ -74,12 +79,39 @@ const app = Vue.createApp({
             creatingRelation: [],
             creatingCondition: [],
             creatingAction: [],
-            focusedConcept: null,
+            focusedItem: null,
             rectangle: null,
             selectingArea: false,
+            addTagFlag: false,
+            addingTag: '',
+            showing: 'board',
+            selectedQuery: null,
+            drawer: false,
         };
     },
     methods: {
+    	addTag(object) {
+    		let category;
+    		for (let i=0; i<this.categories.length; i++) {
+    			if (this.categories[i].name==this.addingTag) {
+    				category = this.categories[i]
+    				break
+    			}
+    		}
+    		if (category) {
+    			category.objects.push(object.id)
+    			object.categories.push(category)
+    		}
+    		else {
+    			let category = new Category(this.addingTag)
+    			category.objects.push(object.id)
+    			object.categories.push(category)
+
+    			this.categories.push(category)
+    		}
+    		this.addTagFlag = false
+    		this.addingTag = ''
+    	},
     	addAction() {
     		let action = new Action()
     		action.x = 100
@@ -141,8 +173,8 @@ const app = Vue.createApp({
 				}
 			})
     	},
-    	focusConcept(concept) {
-    		this.focusedConcept = concept
+    	focusItem(item) {
+    		this.focusedItem = item
     	},
     	getObjectById(id) {
     		for(let i=0; i<this.concepts.length; i++) {
@@ -173,8 +205,8 @@ const app = Vue.createApp({
     	},
     	boardMouseDown(event) {
     		if (event.target.id=="generalSVG") {
-	    		if (this.focusedConcept) {
-	    			this.focusedConcept = null
+	    		if (this.focusedItem) {
+	    			this.focusedItem = null
 	    		}
 	    		else if (this.selectingArea) {
 	    			let mapRect = document.getElementById('board').getBoundingClientRect()
@@ -220,7 +252,7 @@ const app = Vue.createApp({
 					line.setAttributeNS(null, 'y1', origin.top + origin.height/2 - functions.top + this.creatingCondition[0][1].y);
 					line.setAttributeNS(null, 'x2', event.x - functions.left);
 					line.setAttributeNS(null, 'y2', event.y - functions.top);
-					line.setAttributeNS(null, 'stroke', 'black');
+					line.setAttributeNS(null, 'stroke', 'white');
 					line.setAttributeNS(null, 'stroke-width', '1');
 
 					document.getElementById('generalFunctionsSVG').appendChild(line)
@@ -241,7 +273,7 @@ const app = Vue.createApp({
 					line.setAttributeNS(null, 'y1', origin.top + origin.height - functions.top + this.creatingAction[0][1].y);
 					line.setAttributeNS(null, 'x2', event.x - functions.left);
 					line.setAttributeNS(null, 'y2', event.y - functions.top);
-					line.setAttributeNS(null, 'stroke', 'black');
+					line.setAttributeNS(null, 'stroke', 'white');
 					line.setAttributeNS(null, 'stroke-width', '1');
 
 					document.getElementById('generalFunctionsSVG').appendChild(line)
@@ -532,7 +564,7 @@ const app = Vue.createApp({
 					line.setAttributeNS(null, 'y1', origin.top + origin.height/2 - board.top + this.creatingRelation[0][1].y);
 					line.setAttributeNS(null, 'x2', event.x);
 					line.setAttributeNS(null, 'y2', event.y);
-					line.setAttributeNS(null, 'stroke', 'black');
+					line.setAttributeNS(null, 'stroke', 'white');
 					line.setAttributeNS(null, 'stroke-width', '1');
 
 					document.getElementById('generalSVG').appendChild(line)
@@ -553,5 +585,70 @@ const app = Vue.createApp({
 		}
     },
 });
+
+const Neon = Vuetify.ThemeDefinition = {
+  dark: true,
+  colors: {
+    background: '#000000', // Dark background
+    surface: '#111111', // Slightly lighter surface color
+    primary: '#03d8f4', // Light electric blue
+    secondary: '#00E5FF', // Lighter secondary color
+    error: '#FF4081', // Neon pink for errors
+    info: '#4CAF50', // Neon green for info
+    success: '#FFD600', // Neon yellow for success
+    warning: '#FF6D00', // Neon orange for warnings
+  },
+}
+const Paper = Vuetify.ThemeDefinition = {
+  dark: false, // Light theme for a paper-like feel
+  colors: {
+   	background: '#FDF5E6', // A warm beige for the background, similar to paper
+    surface: '#D2B48C', // A warm brown, similar to wood
+    primary: '#FFA500', // An orange tone for primary
+    secondary: '#FFD700', // A lighter yellow-orange for secondary
+    error: '#FF6B6B', // A soft red for errors
+    info: '#FFD700', // A light yellow for info
+    success: '#8FBC8F', // A muted green for success
+    warning: '#FFA500', // The same orange tone for warnings as primary
+  },
+}
+
+
+const vuetify = Vuetify.createVuetify({
+  	theme: {
+	  	defaultTheme: 'dark',
+	    themes: {
+			light: {
+				colors: {
+					primary: '#4285F4', // Google Blue
+					secondary: '#202124', // Google Grey
+					accent: '#FF5722', // Google Red
+					error: '#F44336', // Google Red
+					info: '#2196F3', // Google Blue
+					success: '#4CAF50', // Google Green
+					warning: '#FFC107', // Google Yellow
+				},
+			},
+			dark: {
+				colors: {
+					primary: '#4285F4', // Google Blue
+					secondary: '#202124', // Google Grey
+					accent: '#FF5722', // Google Red
+					error: '#F44336', // Google Red
+					info: '#2196F3', // Google Blue
+					success: '#4CAF50', // Google Green
+					warning: '#FFC107', // Google Yellow
+				},
+			},
+			Neon,
+			Paper
+	    },
+  	},
+  	options: {
+    	customProperties: true,
+   	}
+})
+
+app.use(vuetify);
 
 app.mount('#app');
