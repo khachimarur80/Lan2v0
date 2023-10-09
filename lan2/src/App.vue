@@ -154,7 +154,20 @@ export default {
       this.$nextTick(() => {
         EventBus.$emit('setQuery', object)
       })
+    },
+    saveData() {
+      console.log(1)
+      window.electronAPI.saveData('data')
     }
+  },
+  watch: {
+    showing: 'saveData',
+    concepts: 'saveData',
+    relations: 'saveData',
+    categories: 'saveData',
+    statements: 'saveData',
+    conditions: 'saveData',
+    actions: 'saveData'
   },
   created() {
     EventBus.$on('openQuery', this.openQuery)

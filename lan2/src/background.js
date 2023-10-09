@@ -1,8 +1,10 @@
 'use strict'
 
-import { app, protocol, BrowserWindow } from 'electron'
+import { app, protocol, BrowserWindow, ipcMain } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
+const path = require('path');
+const fs = require('fs');
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
 protocol.registerSchemesAsPrivileged([
@@ -10,6 +12,8 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 async function createWindow() {
+  const preloadFilePath = path.join(__dirname, '../src', 'preload.js')
+
   const win = new BrowserWindow({
     width: 800,
     height: 600,
@@ -18,6 +22,7 @@ async function createWindow() {
     hasShadow: false,
     backgroundColor: '#121212',
     webPreferences: {
+      preload: preloadFilePath,
       nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
       contextIsolation: !process.env.ELECTRON_NODE_INTEGRATION
     }
@@ -52,6 +57,9 @@ app.on('ready', async () => {
     }
   }
   createWindow()
+  ipcMain.on('save-data', (event, data) => {
+    console.log(data)
+  });
 })
 
 if (isDevelopment) {
