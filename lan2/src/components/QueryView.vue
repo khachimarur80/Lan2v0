@@ -67,7 +67,19 @@
             </div>
           </div>
           <v-card-text>
-            <div v-for="item in filtered" :key="item.id" @click="selectedQuery=item"  :style="{ color: getTextColor(item) }">{{ item.name }}#{{ item.id }}</div>
+            <div v-for="item in filtered" :key="item.id" @click="selectedQuery=item"  :style="{ color: getTextColor(item) }" class="d-flex align-center justify-space-between">
+              <div class="text-body-2" v-if="item.name">
+                {{ item.name }}
+              </div>
+              <div class="text-body-2" v-else>
+                #{{ item.id }}
+              </div>
+              <v-btn icon dense x-small color="orange" @mousedown.stop @click="deleteItem(item)">
+                <v-icon>
+                  mdi-close
+                </v-icon>
+              </v-btn>
+            </div>
           </v-card-text>
         </v-card>
       </div>
@@ -128,10 +140,7 @@
 
     data: () => ({
       selectedQuery: [],
-      relations: null,
-      categories: null,
       selectingArea: null,
-      objects: [],
       loading: false,
       select: null,
 
@@ -140,13 +149,13 @@
     }),
 
     props: {
-      conceptsData: {
+      concepts: {
           required: true,
       },
-      relationsData: {
+      relations: {
           required: true,
       },
-      categoriesData: {
+      categories: {
           required: true,
       }
     },
@@ -154,9 +163,9 @@
     methods: {
       getTextColor(item) {
         if (item) {
-          if (item.objects) {
+          if (item.objectType == 'category') {
             return this.$vuetify.theme.themes.dark.error;
-          } else if (item.subject) {
+          } else if (item.objectType == 'relation') {
             return this.$vuetify.theme.themes.dark.primary;
           } else {
             return this.$vuetify.theme.themes.dark.success;
@@ -165,9 +174,19 @@
         return 'white'
       },
       getObjectById(id) {
-        for(let i=0; i<this.objects.length; i++) {
-          if (this.objects[i].id==id) {
-            return this.objects[i]
+        for(let i=0; i<this.concepts.length; i++) {
+          if (this.concepts[i].id==id) {
+            return this.concepts[i]
+          }
+        }
+        for(let i=0; i<this.relations.length; i++) {
+          if (this.relations[i].id==id) {
+            return this.relations[i]
+          }
+        }
+        for(let i=0; i<this.categories.length; i++) {
+          if (this.categories[i].id==id) {
+            return this.categories[i]
           }
         }
       },
@@ -177,8 +196,10 @@
         this.select = null
       },
       setQuery(object) {
-        console.log(3)
         this.selectedQuery = object
+      },
+      deleteItem(item) {
+        EventBus.$emit('deleteItem', item)
       }
     },
 
@@ -205,20 +226,16 @@
           return this.relations
         }
         else {
-          return this.objects
+          return [...this.concepts, ...this.relations, ...this.categories]
         }
+      },
+      objects() {
+        return [...this.concepts, ...this.relations, ...this.categories]
       }
     },
 
     created() {
-      this.concepts = this.conceptsData
-      this.relations = this.relationsData
-      this.categories = this.categoriesData
-
       EventBus.$on('setQuery', this.setQuery)
-
-      this.objects = [...this.concepts, ...this.relations, ...this.categories]
-      console.log(this.$vuetify.theme)
     }
   }
 </script>

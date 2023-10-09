@@ -1,82 +1,84 @@
 <template>
-  <v-container>
-    <div id="functions" @mousedown="functionMouseDown" @mousemove="functionMouseMove">
-      <svg id="generalFunctionsSVG" height="100%" width="100%">
-        <template v-for="condition in conditions">
-          <template v-for="(item, i) in condition.items">
-            <line 
-              v-if="!item[1]"
-              :x1="item[0][0].x+70+'px'"
-              :y1="item[0][0].y+'px'"
-              :x2="condition.x+'px'"
-              :y2="condition.y-30+'px'"
-              width="1"
-              stroke="white"
-              :key="i"
-            >
-            </line>
-          </template>
-        </template>
-        <template v-for="action in actions">
-          {{ action.condition }}
+  <div id="functions" @mousedown="functionMouseDown" @mousemove="functionMouseMove">
+    <svg id="generalFunctionsSVG" height="100%" width="100%">
+      <template v-for="condition in conditions">
+        <template v-for="(item, i) in condition.items">
           <line 
-            v-if="action.condition"
-            :x1="action.condition[0].x+'px'"
-            :y1="action.condition[0].y + 30+'px'"
-            :x2="action.x+'px'"
-            :y2="action.y+20+'px'"
+            v-if="!item[1]"
+            :x1="item[0][0].x+70+'px'"
+            :y1="item[0][0].y+'px'"
+            :x2="condition.x+'px'"
+            :y2="condition.y-30+'px'"
             width="1"
             stroke="white"
-            :key="action.id"
+            :key="i"
           >
           </line>
         </template>
-      </svg>
-      <div class="statement" v-for="(statement, i) in statements" :key="i" :style="{ top : statement.y+'px', left : statement.x+'px'}" :data-id="statement.id" ref="statement" draggable="true">
-        <div class="statement-inner">
-          <input v-for="(item, i) in statement.items" :key="i" @mousedown.stop style="width: 0px" v-model="item[1]" :class="'statement-'+item[0]">
-        </div>
-        <span class="node statement-node" @mousedown.stop>
-          <span class="node-inner" @click="createCondition">
-          </span>
-        </span>
+      </template>
+      <template v-for="action in actions">
+        {{ action.condition }}
+        <line 
+          v-if="action.condition"
+          :x1="action.condition[0].x+'px'"
+          :y1="action.condition[0].y + 30+'px'"
+          :x2="action.x+'px'"
+          :y2="action.y+20+'px'"
+          width="1"
+          stroke="white"
+          :key="action.id"
+        >
+        </line>
+      </template>
+    </svg>
+    <div class="statement" v-for="statement in statements" :key="statement.id" :style="{ top : statement.y+'px', left : statement.x+'px'}" :data-id="statement.id" ref="statement" draggable="true">
+      <div class="statement-inner">
+        <input v-for="(item, i) in statement.items" :key="i" @mousedown.stop style="width: 0px" v-model="item[1]" :class="'statement-'+item[0]">
       </div>
-      <div class="condition" v-for="(condition, i) in conditions" :key="i" :style="{ top : condition.y+'px', left : condition.x+'px'}" :data-id="condition.id" ref="condition" draggable="true">
-        <span class="node condition-node" @mousedown.stop>
-          <span class="node-inner" @click="createCondition">
-          </span>
+      <span class="node statement-node" @mousedown.stop>
+        <span class="node-inner" @click="createCondition">
         </span>
-        <span class="node action-node" @mousedown.stop>
-          <span class="node-inner" @click="createAction">
-          </span>
+      </span>
+    </div>
+    <div class="condition" v-for="condition in conditions" :key="condition.id" :style="{ top : condition.y+'px', left : condition.x+'px'}" :data-id="condition.id" ref="condition" draggable="true">
+      <span class="node condition-node" @mousedown.stop>
+        <span class="node-inner" @click="createCondition">
         </span>
-        <div class="condition-inner">
-          <div v-for="(item, i) in condition.items" :key="i" style="width:100%;">
-            <div v-if="item[1]">
-              <input @mousedown.stop v-model="item[0]" :disabled="!item[1]">
-            </div>
-            <div v-else style="display: flex; justify-content: space-evenly; width:100%;">
-              <span v-for="i in item[0][0].items" :key="i">{{ i[1] }}</span>
-            </div>
+      </span>
+      <span class="node action-node" @mousedown.stop>
+        <span class="node-inner" @click="createAction">
+        </span>
+      </span>
+      <div class="condition-inner">
+        <div v-for="(item, i) in condition.items" :key="i" style="width:100%;">
+          <div v-if="item[1]">
+            <input @mousedown.stop v-model="item[0]" :disabled="!item[1]">
+          </div>
+          <div v-else style="display: flex; justify-content: space-evenly; width:100%;">
+            <span v-for="(i, key) in item[0][0].items" :key="key">{{ i[1] }}</span>
           </div>
         </div>
       </div>
-      <div class="action" v-for="(action, i) in actions" :key="i" :style="{ top : action.y+'px', left : action.x+'px'}" :data-id="action.id" ref="action" draggable="true">
-        <span class="node action-node" @mousedown.stop>
-          <span class="node-inner" @click="createAction">
-          </span>
+    </div>
+    <div class="action" v-for="(action, i) in actions" :key="i" :style="{ top : action.y+'px', left : action.x+'px'}" :data-id="action.id" ref="action" draggable="true">
+      <span class="node action-node" @mousedown.stop>
+        <span class="node-inner" @click="createAction">
         </span>
-        <div class="condition-inner">
-          <input @mousedown.stop v-model="action.name" style="width: 0px">
-        </div>
+      </span>
+      <div class="condition-inner">
+        <input @mousedown.stop v-model="action.name" style="width: 0px">
       </div>
     </div>
-  </v-container>
+  </div>
 </template>
 
 <script>
+
+  import EventBus from '@/event-bus.js';
+
   class Statement {
     constructor(type) {
+      this.objectType = 'statement'
       this.id = Math.floor(Math.random()*100000)
       this.type = type
       this.items = []
@@ -88,6 +90,7 @@
   }
   class Condition {
     constructor() {
+      this.objectType = 'condition'
       this.id = Math.floor(Math.random()*100000)
       this.items = []
 
@@ -101,26 +104,51 @@
     name: 'FunctionsView',
 
     data: () => ({
-      actions: null,
-      conditions: null,
-      statements: null,
       creatingCondition: [],
       creatingAction: []
     }),
 
     props: {
-      actionsData: {
+      actions: {
           required: true,
       },
-      conditionsData: {
+      conditions: {
           required: true,
       },
-      statementsData: {
+      statements: {
           required: true,
       }
     },
 
     methods: {
+      hoveringBox(element) {
+        var rect1 = element.getBoundingClientRect();
+        let elements
+        if (element.getAttribute("data-id")) {
+          elements = document.querySelectorAll('.wordObj:not([data-id="'+element.getAttribute("data-id")+'"] .wordObj)');
+        }
+        else {
+          elements = document.querySelectorAll('.wordObj')
+        }
+
+        for (let i = 0; i < elements.length; i++) {
+          var element2 = elements[i];
+          if (element2 === element) {
+              continue;
+          }
+          var rect2 = element2.getBoundingClientRect();
+          var overlaps = !(
+            rect1.right < rect2.left ||
+            rect1.left > rect2.right ||
+            rect1.bottom < rect2.top ||
+            rect1.top > rect2.bottom
+          );
+          if (overlaps) {
+            return element2;
+          }
+        }
+        return null;
+      },
       dragConcept(word) {
         const vm = this;
         var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
@@ -180,31 +208,21 @@
         }
       },
       getObjectById(id) {
-        for(let i=0; i<this.concepts.length; i++) {
-        if (this.concepts[i].id==id) {
-          return this.concepts[i]
+        for(let i=0; i<this.statements.length; i++) {
+          if (this.statements[i].id==id) {
+            return this.statements[i]
+          }
         }
-      }
-      for(let i=0; i<this.statements.length; i++) {
-        if (this.statements[i].id==id) {
-          return this.statements[i]
+        for(let i=0; i<this.actions.length; i++) {
+          if (this.actions[i].id==id) {
+            return this.actions[i]
+          }
         }
-      }
-      for(let i=0; i<this.actions.length; i++) {
-        if (this.actions[i].id==id) {
-          return this.actions[i]
+        for(let i=0; i<this.conditions.length; i++) {
+          if (this.conditions[i].id==id) {
+            return this.conditions[i]
+          }
         }
-      }
-      for(let i=0; i<this.conditions.length; i++) {
-        if (this.conditions[i].id==id) {
-          return this.conditions[i]
-        }
-      }
-      for(let i=0; i<this.relations.length; i++) {
-        if (this.relations[i].id==id) {
-          return this.relations[i]
-        }
-      }
       },
       createAction(event) {
         let element = event.target
@@ -281,7 +299,8 @@
       },
       createStatement(type) {
         let statement = new Statement(type)
-        this.statements.push(statement)
+
+        EventBus.$emit('addItem', statement)
 
         if (type=='[]') {
           statement.items = [['tag', '']]
@@ -300,12 +319,12 @@
         }
 
         this.$nextTick(()=>{
-        if (this.$refs.statement) {
-          this.$refs.statement.forEach((statementElement) => {
-            this.dragConcept(statementElement)
-          })
-        }
-      })
+          if (this.$refs.statement) {
+            this.$refs.statement.forEach((statementElement) => {
+              this.dragConcept(statementElement)
+            })
+          }
+        })
       },
       functionMouseDown(event) {
         event.preventDefault()
@@ -314,15 +333,15 @@
           condition.x = event.x - event.target.getBoundingClientRect().left
           condition.y = event.y - event.target.getBoundingClientRect().top
 
-          this.conditions.push(condition)
+          EventBus.$emit('addItem', condition)
 
           this.$nextTick(()=>{
-          if (this.$refs.condition) {
-            this.$refs.condition.forEach((conditionElement) => {
-              this.dragConcept(conditionElement)
-            })
-          }
-        })
+            if (this.$refs.condition) {
+              this.$refs.condition.forEach((conditionElement) => {
+                this.dragConcept(conditionElement)
+              })
+            }
+          })
         }
       },
       functionMouseMove(event) {
@@ -372,9 +391,29 @@
     },
 
     created() {
-      this.actions = this.actionsData
-      this.conditions = this.conditionsData
-      this.statements = this.statementsData
+      EventBus.$on('createStatement', this.createStatement)
+
+      this.$nextTick(()=>{
+        if (this.$refs.statement) {
+          this.$refs.statement.forEach((statementElement) => {
+            this.dragConcept(statementElement)
+          })
+        }
+      })
+      this.$nextTick(()=>{
+        if (this.$refs.condition) {
+          this.$refs.condition.forEach((conditionElement) => {
+            this.dragConcept(conditionElement)
+          })
+        }
+      })
+      this.$nextTick(()=>{
+        if (this.$refs.action) {
+            this.$refs.action.forEach((actionElement) => {
+              this.dragConcept(actionElement)
+            })
+          }
+      })
     }
   }
 </script>

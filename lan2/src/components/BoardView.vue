@@ -122,6 +122,7 @@
 
   class Concept {
     constructor() {
+      this.objectType = 'concept'
       this.name = ''
       this.id = Math.floor(Math.random()*100000)
       this.data = 'file'
@@ -137,6 +138,7 @@
   }
   class Relation {
     constructor() {
+      this.objectType = 'relation'
       this.name = ''
       this.id = Math.floor(Math.random()*100000)
       this.subject = null
@@ -150,6 +152,7 @@
   }
   class Category {
     constructor(name) {
+      this.objectType = 'category'
       this.name = name
       this.id = Math.floor(Math.random()*100000)
       this.objects = []
@@ -164,31 +167,26 @@
       focusedItem: null,
       addTagFlag: false,
       addingTag: '',
-      concepts: null,
-      relations: null,
-      categories: null,
-      selectingArea: null,
       creatingRelation: [],
     }),
 
     props: {
-      conceptsData: {
+      concepts: {
         required: true,
       },
-      relationsData: {
+      relations: {
         required: true,
       },
-      categoriesData: {
+      categories: {
         required: true,
       },
-      selectingAreaData: {
+      selectingArea: {
         require: true,
       }
     },
 
     methods: {
       openQuery(object) {
-        console.log(1)
         EventBus.$emit('openQuery', object)
       },
       getObjectById(id) {
@@ -239,7 +237,7 @@
             concept.x = event.x - event.target.getBoundingClientRect().left
             concept.y = event.y - event.target.getBoundingClientRect().top
 
-            this.concepts.push(concept)
+            EventBus.$emit('addItem', concept)
 
             this.$nextTick(()=>{
             if (this.$refs.concept) {
@@ -289,17 +287,14 @@
             break
           }
         }
-        console.log(category)
         if (category) {
-          category.objects.push(object.id)
-          object.categories.push(category)
+          EventBus.$emit('addTag', object, category)
         }
         else {
           let category = new Category(this.addingTag)
-          category.objects.push(object.id)
-          object.categories.push(category)
+          EventBus.$emit('addItem', category)
 
-          this.categories.push(category)
+          EventBus.$emit('addTag', object, category)
         }
         this.addTagFlag = false
         this.addingTag = ''
@@ -343,7 +338,7 @@
           let line = document.getElementById('creating-relation-line');
           line.remove()
 
-          this.relations.push(relation)
+          EventBus.$emit('addItem', relation)
 
           this.creatingRelation = []
         }
@@ -443,11 +438,13 @@
     },
 
     created() {
-      this.concepts = this.conceptsData
-      this.relations = this.relationsData
-      this.categories = this.categoriesData
-      this.selectingArea = this.selectingAreaData
-
+      this.$nextTick(()=>{
+        if (this.$refs.concept) {
+          this.$refs.concept.forEach((conceptElement) => {
+            this.dragConcept(conceptElement)
+          })
+        }
+      })
     }
   }
 </script>

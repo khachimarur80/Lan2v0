@@ -11,10 +11,12 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
 ])
 
+let win
+
 async function createWindow() {
   const preloadFilePath = path.join(__dirname, '../src', 'preload.js')
 
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 800,
     height: 600,
     frame: false,
@@ -58,7 +60,15 @@ app.on('ready', async () => {
   }
   createWindow()
   ipcMain.on('save-data', (event, data) => {
-    console.log(data)
+    const filePath = path.join(__dirname, '../src/assets', 'data.json');
+    fs.writeFile(filePath, JSON.stringify(data), ()=>{});
+  });
+  ipcMain.on('get-data', (event, data) => {
+    const filePath = path.join(__dirname, '../src/assets', 'data.json');
+    fs.readFile(filePath, 'utf-8', (err, data) => {
+      const message = JSON.parse(data);
+      win.webContents.send('get-data-response', message);
+    });
   });
 })
 

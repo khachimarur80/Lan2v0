@@ -10,4 +10,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.on(channel, onceListener);
     },
     saveData: (data) => ipcRenderer.send('save-data', data),
+    getData: () => ipcRenderer.send('get-data'),
 })

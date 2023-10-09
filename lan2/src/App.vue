@@ -1,6 +1,6 @@
 <template>
   <v-app>
-      <v-app-bar elevation="0" color="secondary" app clipped-left style="-webkit-app-region: drag; background: #121212 !important">
+      <v-app-bar outlined app clipped-left style="-webkit-app-region: drag;" elevation="0">
         <v-app-bar-nav-icon>
             <v-btn icon @click.stop="drawer = !drawer">
                 <v-icon>
@@ -9,13 +9,13 @@
             </v-btn>
         </v-app-bar-nav-icon>
         <v-spacer></v-spacer>
-        <v-btn @click="showing='board'" color="error" outlined class="ml-2 mr-2">
+        <v-btn @click="showing='board'" outlined color="error" class="ml-2 mr-2">
           Board
         </v-btn>
-        <v-btn @click="showing='query'" color="success" outlined class="ml-2 mr-2">
+        <v-btn @click="showing='query'" outlined color="success" class="ml-2 mr-2">
           Query
         </v-btn>
-        <v-btn @click="showing='functions'" color="primary" outlined class="ml-2 mr-2">
+        <v-btn @click="showing='functions'" outlined color="primary" class="ml-2 mr-2">
           Function
         </v-btn>
         <v-spacer></v-spacer>
@@ -25,69 +25,98 @@
               </v-icon>
           </v-btn>
       </v-app-bar>
-      <v-navigation-drawer v-model="drawer" absolute left hide-overlay clipped app width="100">
+      <v-navigation-drawer v-model="drawer" absolute left hide-overlay clipped app width="120">
         <div style="width: 100%; height: 60px;"></div>
-        <v-list>
+        <v-list v-if="showing=='board'" class="d-flex align-center flex-column">
           <v-list-item>
-            <button @click="addAction">
+            <v-btn @click="selectingArea=true" v-if="!selectingArea">
+              <v-icon>
+                mdi-select
+              </v-icon>
+            </v-btn>
+            <v-btn @click="selectingArea=false" v-else>
+              <v-icon>
+                mdi-hand-back-right-outline
+              </v-icon>
+            </v-btn>
+          </v-list-item>
+          <v-list-item>
+            <v-btn>
+              <v-icon>
+                mdi-arrange-send-to-back
+              </v-icon>
+            </v-btn>
+          </v-list-item>
+        </v-list>
+        <v-list v-if="showing=='query'" class="d-flex align-center flex-column">
+        </v-list>
+        <v-list v-if="showing=='functions'" class="d-flex align-center flex-column">
+          <v-list-item>
+            <v-btn @click="addAction" width="100">
               Action
-            </button>
+            </v-btn>
           </v-list-item>
           <v-list-item>
-            <button @click="createStatement('[]')">
-              []
-            </button>
+            <v-btn @click="addAction" width="100">
+              Clause
+            </v-btn>
           </v-list-item>
           <v-list-item>
-            <button @click="createStatement('#')">
-              #
-            </button>
+            <v-btn @click="createStatement('[]')" width="100">
+              <v-icon color="success">mdi-code-brackets</v-icon>
+            </v-btn>
           </v-list-item>
           <v-list-item>
-            <button @click="createStatement('[]--[]')">
-              []--[]
-            </button>
+            <v-btn @click="createStatement('#')" width="100">
+              <v-icon color="error">mdi-pound</v-icon>
+            </v-btn>
           </v-list-item>
           <v-list-item>
-            <button @click="createStatement('#--[]')">
-              #--[]
-            </button>
+            <v-btn @click="createStatement('[]--[]')" width="100">
+              <v-icon color="success">mdi-code-brackets</v-icon>
+              <v-icon color="primary">mdi-transit-connection-horizontal</v-icon>
+              <v-icon color="success">mdi-code-brackets</v-icon>
+            </v-btn>
           </v-list-item>
           <v-list-item>
-            <button @click="createStatement('#--#')">
-              #--#
-            </button>
+            <v-btn @click="createStatement('#--[]')" width="100">
+              <v-icon color="error">mdi-pound</v-icon>
+              <v-icon color="primary">mdi-transit-connection-horizontal</v-icon>
+              <v-icon color="success">mdi-code-brackets</v-icon>
+            </v-btn>
           </v-list-item>
           <v-list-item>
-            <button @click="selectingArea=true" v-if="!selectingArea">
-              Area
-            </button>
-            <button @click="selectingArea=false" v-else>
-              No Area
-            </button>
+            <v-btn @click="createStatement('#--#')" width="100">
+              <v-icon color="error">mdi-pound</v-icon>
+              <v-icon color="primary">mdi-transit-connection-horizontal</v-icon>
+              <v-icon color="error">mdi-pound</v-icon>
+            </v-btn>
           </v-list-item>
         </v-list>
       </v-navigation-drawer>
       <v-main>
-        <div id="contents">
+        <div id="contents" v-if="loaded">
           <BoardView 
             v-if="showing=='board'" 
-            :conceptsData="concepts"
-            :relationsData="relations"
-            :categoriesData="categories"
-            :selectingAreaData="selectingArea"
+            :concepts="concepts"
+            :relations="relations"
+            :categories="categories"
+            :selectingArea="selectingArea"
             />
           <QueryView 
             v-if="showing=='query'"
-            :conceptsData="concepts"
-            :relationsData="relations"
-            :categoriesData="categories"
+            :concepts="concepts"
+            :relations="relations"
+            :categories="categories"
+            :statements="statements"
+            :actions="actions"
+            :conditions="conditions"
           />
           <FunctionsView 
             v-if="showing=='functions'"
-            :statementsData="statements"
-            :actionsData="actions"
-            :conditionsData="conditions"
+            :statements="statements"
+            :actions="actions"
+            :conditions="conditions"
           />
         </div>
       </v-main>
@@ -103,6 +132,7 @@ import EventBus from './event-bus.js';
 
 class Action {
   constructor() {
+    this.objectType = 'action'
     this.id = Math.floor(Math.random()*100000)
     this.condition = null
     this.name = ''
@@ -132,8 +162,39 @@ export default {
     actions: [],
     selectingArea: false,
     drawer: false,
+    loaded: true,
   }),
   methods: {
+    createStatement(type) {
+      EventBus.$emit('createStatement', type)
+    },
+    getObjectById(id) {
+      for(let i=0; i<this.concepts.length; i++) {
+        if (this.concepts[i].id==id) {
+          return this.concepts[i]
+        }
+      }
+      for(let i=0; i<this.statements.length; i++) {
+        if (this.statements[i].id==id) {
+          return this.statements[i]
+        }
+      }
+      for(let i=0; i<this.actions.length; i++) {
+        if (this.actions[i].id==id) {
+          return this.actions[i]
+        }
+      }
+      for(let i=0; i<this.conditions.length; i++) {
+        if (this.conditions[i].id==id) {
+          return this.conditions[i]
+        }
+      }
+      for(let i=0; i<this.relations.length; i++) {
+        if (this.relations[i].id==id) {
+          return this.relations[i]
+        }
+      }
+    },
     addAction() {
       let action = new Action()
       action.x = 100
@@ -142,11 +203,11 @@ export default {
       this.actions.push(action)
 
       this.$nextTick(()=>{
-      if (this.$refs.action) {
-          this.$refs.action.forEach((actionElement) => {
-            this.dragConcept(actionElement)
-          })
-        }
+        if (this.$refs.action) {
+            this.$refs.action.forEach((actionElement) => {
+              this.dragConcept(actionElement)
+            })
+          }
       })
     },
     openQuery(object) {
@@ -157,7 +218,51 @@ export default {
     },
     saveData() {
       console.log(1)
-      window.electronAPI.saveData('data')
+      const data = {
+        'showing' : this.showing,
+        'concepts' : this.concepts,
+        'relations' : this.relations,
+        'categories' : this.categories,
+        'statements' : this.statements,
+        'conditions' : this.conditions,
+        'actions' : this.actions,
+      }
+      window.electronAPI.saveData(data)
+    },
+    addItem(item) {
+      if (item.objectType == 'category') {
+        this.categories.push(item)
+      }
+      else if (item.objectType == 'relation') {
+        this.relations.push(item)
+      }
+      else if (item.objectType == 'statement') {
+        this.statements.push(item)
+      }
+      else if (item.objectType == 'condition') {
+        this.conditions.push(item)
+      }
+      else if (item.objectType == 'action') {
+        this.actions.push(item)
+      }
+      else {
+        this.concepts.push(item)
+      }
+    },
+    addTag(target, tag) {
+      tag.objects.push(target.id)
+      target.categories.push(tag)
+    },
+    deleteItem(item) {
+      if (item.objectType == 'category') {
+        this.categories = this.categories.filter(category => category.id !== item.id);
+      }
+      else if (item.objectType == 'relation') {
+        this.relations = this.relations.filter(relation => relation.id !== item.id);
+      }
+      else {
+        this.concepts = this.concepts.filter(concept => concept.id !== item.id);
+      }
     }
   },
   watch: {
@@ -169,8 +274,29 @@ export default {
     conditions: 'saveData',
     actions: 'saveData'
   },
-  created() {
+  async created() {
+    const message = await new Promise(resolve => {
+      window.electronAPI.getData()
+      window.electronAPI.response('get-data-response', resolve)
+    })
+
+    this.showing = message.showing || 'board';
+    this.concepts = message.concepts || [];
+    this.relations = message.relations || [];
+    this.categories = message.categories || [];
+    this.statements = message.statements || [];
+    this.conditions = message.conditions || [];
+    this.actions = message.actions || [];
+
+    this.loaded = true;
+
+    //BoardView Events
     EventBus.$on('openQuery', this.openQuery)
+    EventBus.$on('addItem', this.addItem)
+    EventBus.$on('addTag', this.addTag)
+
+    //QueryView Events
+    EventBus.$on('deleteItem', this.deleteItem)
   }
 };
 </script>
@@ -309,7 +435,9 @@ export default {
     padding: 5px;
     cursor: grab;
     transform: translate(-50%, -50%);
-    outline: 1px solid #fff;
+    outline: 1px solid purple;
+    min-height: 26px;
+    border-radius: 5px;
   }
   .condition-inner {
     display: flex;
@@ -325,8 +453,10 @@ export default {
     outline: none;
     border-radius: 5px;
     width: 70px;
-    border: none;
+    height: 26px;
+    border: 1px solid purple;
     text-align: center;
+    color: white;
   }
   .action {
     position: absolute;
@@ -334,7 +464,6 @@ export default {
     padding: 5px;
     cursor: grab;
     transform: translate(-50%, -50%);
-    outline: 1px solid #fff;
   }
   .action-inner {
     display: flex;
@@ -349,17 +478,17 @@ export default {
   .action input {
     outline: none;
     border-radius: 5px;
-    min-width: 30px;
-    border: 1px solid #fff;
+    min-width: 60px;
+    border: 1px solid orange;
   }
 
   .statement {
     position: absolute;
-    border-radius: 5px;
+    border-radius: 5px !important;
     padding: 5px;
     cursor: grab;
     transform: translate(-50%, -50%);
-    outline: 1px solid #fff;
+    outline: 1px solid yellow;
   }
   .statement-inner {
     display: flex;
@@ -372,7 +501,8 @@ export default {
   .statement input {
     outline: none;
     border-radius: 5px;
-    min-width: 30px;
+    min-width: 60px;
+    background: #191919;
   }
 
   .statement-inner::before {
