@@ -1,16 +1,16 @@
 <template>
-  <div id="functions" @mousedown="functionMouseDown" @mousemove="functionMouseMove">
+  <div id="functions" @mousemove="functionMouseMove">
     <svg id="generalFunctionsSVG" height="100%" width="100%">
       <template v-for="condition in conditions">
         <template v-for="(item, i) in condition.items">
           <line 
             v-if="!item[1]"
-            :x1="item[0][0].x+70+'px'"
-            :y1="item[0][0].y+'px'"
-            :x2="condition.x+'px'"
-            :y2="condition.y-30+'px'"
+            :x1="item[0].x+item[0].offsetX+'px'"
+            :y1="item[0].y+item[0].offsetY+'px'"
+            :x2="condition.x+condition.statementOffsetX+'px'"
+            :y2="condition.y+condition.statementOffsetY+'px'"
             width="1"
-            stroke="white"
+            stroke="yellow"
             :key="i"
           >
           </line>
@@ -20,12 +20,12 @@
         {{ action.condition }}
         <line 
           v-if="action.condition"
-          :x1="action.condition[0].x+'px'"
-          :y1="action.condition[0].y + 30+'px'"
-          :x2="action.x+'px'"
-          :y2="action.y+20+'px'"
+          :x1="action.condition.x+action.condition.actionOffsetX+'px'"
+          :y1="action.condition.y+action.condition.actionOffsetY+'px'"
+          :x2="action.x+action.offsetX+'px'"
+          :y2="action.y+action.offsetY+'px'"
           width="1"
-          stroke="white"
+          stroke="orange"
           :key="action.id"
         >
         </line>
@@ -55,7 +55,7 @@
             <input @mousedown.stop v-model="item[0]" :disabled="!item[1]">
           </div>
           <div v-else style="display: flex; justify-content: space-evenly; width:100%;">
-            <span v-for="(i, key) in item[0][0].items" :key="key">{{ i[1] }}</span>
+            <span v-for="(element, key) in item[0].items[0]" :key="key">{{ element }}</span>
           </div>
         </div>
       </div>
@@ -63,10 +63,10 @@
     <div class="action" v-for="(action, i) in actions" :key="i" :style="{ top : action.y+'px', left : action.x+'px'}" :data-id="action.id" ref="action" draggable="true">
       <span class="node action-node" @mousedown.stop>
         <span class="node-inner" @click="createAction">
-        </span>
       </span>
-      <div class="condition-inner">
-        <input @mousedown.stop v-model="action.name" style="width: 0px">
+      </span>
+      <div class="action-inner">
+        <input @mousedown.stop v-model="action.name">
       </div>
     </div>
   </div>
@@ -75,30 +75,6 @@
 <script>
 
   import EventBus from '@/event-bus.js';
-
-  class Statement {
-    constructor(type) {
-      this.objectType = 'statement'
-      this.id = Math.floor(Math.random()*100000)
-      this.type = type
-      this.items = []
-
-      //Board values
-      this.x = 100
-      this.y = 100
-    }
-  }
-  class Condition {
-    constructor() {
-      this.objectType = 'condition'
-      this.id = Math.floor(Math.random()*100000)
-      this.items = []
-
-      //Board values
-      this.x = 100
-      this.y = 100
-    }
-  }
 
   export default {
     name: 'FunctionsView',
@@ -122,7 +98,7 @@
 
     methods: {
       hoveringBox(element) {
-        var rect1 = element.getBoundingClientRect();
+        let rect1 = element.getBoundingClientRect();
         let elements
         if (element.getAttribute("data-id")) {
           elements = document.querySelectorAll('.wordObj:not([data-id="'+element.getAttribute("data-id")+'"] .wordObj)');
@@ -132,12 +108,12 @@
         }
 
         for (let i = 0; i < elements.length; i++) {
-          var element2 = elements[i];
+          let element2 = elements[i];
           if (element2 === element) {
               continue;
           }
-          var rect2 = element2.getBoundingClientRect();
-          var overlaps = !(
+          let rect2 = element2.getBoundingClientRect();
+          let overlaps = !(
             rect1.right < rect2.left ||
             rect1.left > rect2.right ||
             rect1.bottom < rect2.top ||
@@ -151,9 +127,9 @@
       },
       dragConcept(word) {
         const vm = this;
-        var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-        var wordObj = this.getObjectById(word.getAttribute('data-id'))
-        var original = [parseInt(wordObj.x), parseInt(wordObj.y)];
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        let wordObj = this.getObjectById(word.getAttribute('data-id'))
+        let original = [parseInt(wordObj.x), parseInt(wordObj.y)];
       
         word.onmousedown = dragMouseDown;
 
@@ -169,7 +145,7 @@
         }
 
         function elementDrag(e) {
-          var wordObj = vm.getObjectById(word.getAttribute('data-id'))
+          let wordObj = vm.getObjectById(word.getAttribute('data-id'))
 
           e = e || window.event;
           e.preventDefault();
@@ -192,6 +168,8 @@
         }
 
         function closeDragElement() {
+          EventBus.$emit('saveData')
+
           document.onmouseup = null;
           document.onmousemove = null;
 
@@ -230,29 +208,33 @@
         let conceptTarget = this.getObjectById(element.parentElement.parentElement.getAttribute('data-id'))
 
         if (!this.creatingAction[0]) {
-          let coords
-          if (event.target.parentElement.classList[1]=='right') {
-            coords = {'x': 18, 'y': 1}
-          }
-          else if (event.target.parentElement.classList[1]=='left') {
-            coords = {'x': -18, 'y': 1}
-          }
-          else if (event.target.parentElement.classList[1]=='up') {
-            coords = {'x': -.5, 'y': -9}
-          }
-          else if (event.target.parentElement.classList[1]=='down') {
-            coords = {'x': -.5, 'y': 9}
-          }
-          else {
-            coords = {'x': 0, 'y': 0}
+          let coords = {
+            'x': event.target.parentElement.getBoundingClientRect().left,
+            'y': event.target.parentElement.getBoundingClientRect().top,
+            'height': event.target.parentElement.getBoundingClientRect().height,
+            'width': event.target.parentElement.getBoundingClientRect().width,
           }
 
           element.parentElement.classList.add('relation-node')
           this.creatingAction.push([conceptTarget, coords])
         }
         else {
+          let coords = {
+            'x': event.target.parentElement.getBoundingClientRect().left,
+            'y': event.target.parentElement.getBoundingClientRect().top,
+            'height': event.target.parentElement.getBoundingClientRect().height,
+            'width': event.target.parentElement.getBoundingClientRect().width,
+          }
+
           element.parentElement.classList.add('relation-node')
-          conceptTarget.condition = this.creatingAction[0]
+
+          conceptTarget.condition = this.creatingAction[0][0]
+
+          this.creatingAction[0][0].actionOffsetX = -this.creatingAction[0][0].x + this.creatingAction[0][1].x + this.creatingAction[0][1].width/2
+          this.creatingAction[0][0].actionOffsetY = -this.creatingAction[0][0].y + this.creatingAction[0][1].y + this.creatingAction[0][1].height/2 - 56
+
+          conceptTarget.offsetX = -conceptTarget.x + coords.x + coords.width/2
+          conceptTarget.offsetY = -conceptTarget.y + coords.y + coords.height/2 - 56
 
           let line = document.getElementById('creating-action-line');
           line.remove()
@@ -262,62 +244,90 @@
       },
       createCondition(event) {
         let element = event.target
+
         let conceptTarget = this.getObjectById(element.parentElement.parentElement.getAttribute('data-id'))
 
         if (!this.creatingCondition[0]) {
-          let coords
-          if (event.target.parentElement.classList[1]=='right') {
-            coords = {'x': 18, 'y': 1}
-          }
-          else if (event.target.parentElement.classList[1]=='left') {
-            coords = {'x': -18, 'y': 1}
-          }
-          else if (event.target.parentElement.classList[1]=='up') {
-            coords = {'x': -.5, 'y': -9}
-          }
-          else if (event.target.parentElement.classList[1]=='down') {
-            coords = {'x': -.5, 'y': 9}
-          }
-          else {
-            coords = {'x': 0, 'y': 0}
+          let coords = {
+            'x': event.target.parentElement.getBoundingClientRect().left,
+            'y': event.target.parentElement.getBoundingClientRect().top,
+            'height': event.target.parentElement.getBoundingClientRect().height,
+            'width': event.target.parentElement.getBoundingClientRect().width,
           }
 
           element.parentElement.classList.add('relation-node')
           this.creatingCondition.push([conceptTarget, coords])
         }
         else {
+          let coords = {
+            'x': event.target.parentElement.getBoundingClientRect().left,
+            'y': event.target.parentElement.getBoundingClientRect().top,
+            'height': event.target.parentElement.getBoundingClientRect().height,
+            'width': event.target.parentElement.getBoundingClientRect().width,
+          }
+
           element.parentElement.classList.add('relation-node')
 
-          conceptTarget.items.push([this.creatingCondition[0], false])
+          conceptTarget.items.push([this.creatingCondition[0][0], false])
           conceptTarget.items.push(['and', true])
 
           let line = document.getElementById('creating-condition-line');
           line.remove()
 
+          this.creatingCondition[0][0].offsetX = -this.creatingCondition[0][0].x + this.creatingCondition[0][1].x + this.creatingCondition[0][1].width/2
+          this.creatingCondition[0][0].offsetY = -this.creatingCondition[0][0].y + this.creatingCondition[0][1].y + this.creatingCondition[0][1].height/2 - 56
+
+          conceptTarget.statementOffsetX = -conceptTarget.x + coords.x + coords.width/2
+          conceptTarget.statementOffsetY = -conceptTarget.y + coords.y + coords.height/2 - 56
+
           this.creatingCondition = []
         }
       },
-      createStatement(type) {
-        let statement = new Statement(type)
+      functionMouseMove(event) {
+        if (this.creatingCondition[0]) {
+          const functions = document.getElementById('functions').getBoundingClientRect()
+          if (document.getElementById('creating-condition-line')) {
+            let line = document.getElementById('creating-condition-line');
+            line.setAttributeNS(null, 'x2', event.x - functions.left);
+            line.setAttributeNS(null, 'y2', event.y - functions.top);
+          }
+          else {
+            let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.id = 'creating-condition-line'
 
-        EventBus.$emit('addItem', statement)
+            line.setAttributeNS(null, 'x1', this.creatingCondition[0][1].x + this.creatingCondition[0][1].width/2);
+            line.setAttributeNS(null, 'y1', this.creatingCondition[0][1].y + this.creatingCondition[0][1].height/2 - 56);
+            line.setAttributeNS(null, 'x2', event.x - functions.left);
+            line.setAttributeNS(null, 'y2', event.y - functions.top);
+            line.setAttributeNS(null, 'stroke', 'yellow');
+            line.setAttributeNS(null, 'stroke-width', '1');
 
-        if (type=='[]') {
-          statement.items = [['tag', '']]
+            document.getElementById('generalFunctionsSVG').appendChild(line)
+          }
         }
-        if (type=='#') {
-          statement.items = [['concept', '']]
-        }
-        if (type=='[]--[]') {
-          statement.items = [['concept', ''],['relation', ''],['concept', '']]
-        }
-        if (type=='#--[]') {
-          statement.items = [['tag', ''],['relation', ''],['concept', '']]
-        }
-        if (type=='#--#') {
-          statement.items = [['tag', ''],['relation', ''],['tag', '']]
-        }
+        else if (this.creatingAction[0]) {
+          const functions = document.getElementById('functions').getBoundingClientRect()
+          if (document.getElementById('creating-action-line')) {
+            let line = document.getElementById('creating-action-line');
+            line.setAttributeNS(null, 'x2', event.x - functions.left);
+            line.setAttributeNS(null, 'y2', event.y - functions.top);
+          }
+          else {
+            let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.id = 'creating-action-line'
 
+            line.setAttributeNS(null, 'x1', this.creatingAction[0][1].x + this.creatingAction[0][1].width/2);
+            line.setAttributeNS(null, 'y1', this.creatingAction[0][1].y + this.creatingAction[0][1].height/2 - 56);
+            line.setAttributeNS(null, 'x2', event.x - functions.left);
+            line.setAttributeNS(null, 'y2', event.y - functions.top);
+            line.setAttributeNS(null, 'stroke', 'orange');
+            line.setAttributeNS(null, 'stroke-width', '1');
+
+            document.getElementById('generalFunctionsSVG').appendChild(line)
+          }
+        }
+      },
+      updateStatementsDrag() {
         this.$nextTick(()=>{
           if (this.$refs.statement) {
             this.$refs.statement.forEach((statementElement) => {
@@ -326,94 +336,52 @@
           }
         })
       },
-      functionMouseDown(event) {
-        event.preventDefault()
-        if (event.target.id=="generalFunctionsSVG") {
-          let condition = new Condition()
-          condition.x = event.x - event.target.getBoundingClientRect().left
-          condition.y = event.y - event.target.getBoundingClientRect().top
-
-          EventBus.$emit('addItem', condition)
-
-          this.$nextTick(()=>{
-            if (this.$refs.condition) {
+      updateActionsDrag() {
+        this.$nextTick(()=>{
+          if (this.$refs.action) {
+              this.$refs.action.forEach((actionElement) => {
+                this.dragConcept(actionElement)
+              })
+            }
+        })
+      },
+      updateConditionsDrag() {
+        this.$nextTick(()=>{
+          if (this.$refs.condition) {
               this.$refs.condition.forEach((conditionElement) => {
                 this.dragConcept(conditionElement)
               })
             }
-          })
-        }
-      },
-      functionMouseMove(event) {
-        if (this.creatingCondition[0]) {
-        const functions = document.getElementById('functions').getBoundingClientRect()
-        if (document.getElementById('creating-condition-line')) {
-          let line = document.getElementById('creating-condition-line');
-          line.setAttributeNS(null, 'x2', event.x - functions.left);
-          line.setAttributeNS(null, 'y2', event.y - functions.top);
-        }
-        else {
-          let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-          line.id = 'creating-condition-line'
-          let origin = document.querySelector('[data-id="'+this.creatingCondition[0][0].id+'"]').getBoundingClientRect()
-          line.setAttributeNS(null, 'x1', origin.left + origin.width - functions.left + this.creatingCondition[0][1].x);
-          line.setAttributeNS(null, 'y1', origin.top + origin.height/2 - functions.top + this.creatingCondition[0][1].y);
-          line.setAttributeNS(null, 'x2', event.x - functions.left);
-          line.setAttributeNS(null, 'y2', event.y - functions.top);
-          line.setAttributeNS(null, 'stroke', 'white');
-          line.setAttributeNS(null, 'stroke-width', '1');
-
-          document.getElementById('generalFunctionsSVG').appendChild(line)
-        }
+        })
       }
-      else if (this.creatingAction[0]) {
-        const functions = document.getElementById('functions').getBoundingClientRect()
-        if (document.getElementById('creating-action-line')) {
-          let line = document.getElementById('creating-action-line');
-          line.setAttributeNS(null, 'x2', event.x - functions.left);
-          line.setAttributeNS(null, 'y2', event.y - functions.top);
-        }
-        else {
-          let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-          line.id = 'creating-action-line'
-          let origin = document.querySelector('[data-id="'+this.creatingAction[0][0].id+'"]').getBoundingClientRect()
-          line.setAttributeNS(null, 'x1', origin.left + origin.width/2 - functions.left + this.creatingAction[0][1].x);
-          line.setAttributeNS(null, 'y1', origin.top + origin.height - functions.top + this.creatingAction[0][1].y);
-          line.setAttributeNS(null, 'x2', event.x - functions.left);
-          line.setAttributeNS(null, 'y2', event.y - functions.top);
-          line.setAttributeNS(null, 'stroke', 'white');
-          line.setAttributeNS(null, 'stroke-width', '1');
-
-          document.getElementById('generalFunctionsSVG').appendChild(line)
-        }
-      }
-      },
     },
 
     created() {
-      EventBus.$on('createStatement', this.createStatement)
+      EventBus.$on('updateActionsDrag', this.updateActionsDrag)
+      EventBus.$on('updateConditionsDrag', this.updateConditionsDrag)
+      EventBus.$on('updateStatementsDrag', this.updateStatementsDrag)
 
-      this.$nextTick(()=>{
+      setTimeout(()=>{
         if (this.$refs.statement) {
           this.$refs.statement.forEach((statementElement) => {
             this.dragConcept(statementElement)
           })
         }
-      })
-      this.$nextTick(()=>{
+      }, 500)
+      setTimeout(()=>{
         if (this.$refs.condition) {
           this.$refs.condition.forEach((conditionElement) => {
             this.dragConcept(conditionElement)
           })
         }
-      })
-      this.$nextTick(()=>{
+      }, 500)
+      setTimeout(()=>{
         if (this.$refs.action) {
             this.$refs.action.forEach((actionElement) => {
               this.dragConcept(actionElement)
             })
           }
-      })
+      }, 500)
     }
   }
 </script>

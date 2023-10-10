@@ -29,19 +29,19 @@
         <div style="width: 100%; height: 60px;"></div>
         <v-list v-if="showing=='board'" class="d-flex align-center flex-column">
           <v-list-item>
-            <v-btn @click="selectingArea=true" v-if="!selectingArea">
+            <v-btn @click="selectingArea=true" width="100" v-if="!selectingArea">
               <v-icon>
                 mdi-select
               </v-icon>
             </v-btn>
-            <v-btn @click="selectingArea=false" v-else>
+            <v-btn @click="selectingArea=false" width="100" v-else>
               <v-icon>
                 mdi-hand-back-right-outline
               </v-icon>
             </v-btn>
           </v-list-item>
           <v-list-item>
-            <v-btn>
+            <v-btn width="100">
               <v-icon>
                 mdi-arrange-send-to-back
               </v-icon>
@@ -52,41 +52,41 @@
         </v-list>
         <v-list v-if="showing=='functions'" class="d-flex align-center flex-column">
           <v-list-item>
-            <v-btn @click="addAction" width="100">
+            <v-btn @click="addAction" width="100" outlined color="orange">
               Action
             </v-btn>
           </v-list-item>
           <v-list-item>
-            <v-btn @click="addAction" width="100">
+            <v-btn @click="addClause" width="100" outlined color="purple">
               Clause
             </v-btn>
           </v-list-item>
           <v-list-item>
-            <v-btn @click="createStatement('[]')" width="100">
+            <v-btn @click="createStatement('[]')" width="100" outlined color="yellow">
               <v-icon color="success">mdi-code-brackets</v-icon>
             </v-btn>
           </v-list-item>
           <v-list-item>
-            <v-btn @click="createStatement('#')" width="100">
+            <v-btn @click="createStatement('#')" width="100" outlined color="yellow">
               <v-icon color="error">mdi-pound</v-icon>
             </v-btn>
           </v-list-item>
           <v-list-item>
-            <v-btn @click="createStatement('[]--[]')" width="100">
+            <v-btn @click="createStatement('[]--[]')" width="100" outlined color="yellow">
               <v-icon color="success">mdi-code-brackets</v-icon>
               <v-icon color="primary">mdi-transit-connection-horizontal</v-icon>
               <v-icon color="success">mdi-code-brackets</v-icon>
             </v-btn>
           </v-list-item>
           <v-list-item>
-            <v-btn @click="createStatement('#--[]')" width="100">
+            <v-btn @click="createStatement('#--[]')" width="100" outlined color="yellow">
               <v-icon color="error">mdi-pound</v-icon>
               <v-icon color="primary">mdi-transit-connection-horizontal</v-icon>
               <v-icon color="success">mdi-code-brackets</v-icon>
             </v-btn>
           </v-list-item>
           <v-list-item>
-            <v-btn @click="createStatement('#--#')" width="100">
+            <v-btn @click="createStatement('#--#')" width="100" outlined color="yellow">
               <v-icon color="error">mdi-pound</v-icon>
               <v-icon color="primary">mdi-transit-connection-horizontal</v-icon>
               <v-icon color="error">mdi-pound</v-icon>
@@ -134,14 +134,53 @@ class Action {
   constructor() {
     this.objectType = 'action'
     this.id = Math.floor(Math.random()*100000)
+    this.name = '#'+this.id.toString()
     this.condition = null
-    this.name = ''
 
     //Board values
     this.x = 100
     this.y = 100
+
+    this.offsetX = 0
+    this.offsetY = 0
   }
 }
+
+class Condition {
+  constructor() {
+    this.objectType = 'condition'
+    this.id = Math.floor(Math.random()*100000)
+    this.name = '#'+this.id.toString()
+    this.items = []
+
+    //Board values
+    this.x = 100
+    this.y = 100
+
+    this.statementOffsetX = 0
+    this.statementOffsetY = 0
+
+    this.actionOffsetX = 0
+    this.actionOffsetY = 0
+  }
+}
+
+class Statement {
+    constructor(type) {
+      this.objectType = 'statement'
+      this.id = Math.floor(Math.random()*100000)
+      this.name = '#'+this.id.toString()
+      this.type = type
+      this.items = []
+
+      //Board values
+      this.x = 100
+      this.y = 100
+
+      this.offsetX = 0
+      this.offsetY = 0
+    }
+  }
 
 export default {
   name: 'App',
@@ -166,7 +205,29 @@ export default {
   }),
   methods: {
     createStatement(type) {
-      EventBus.$emit('createStatement', type)
+      let statement = new Statement(type)
+      statement.x = Math.floor(Math.random()*100) + 150
+      statement.y = Math.floor(Math.random()*100) + 150
+
+      if (type=='[]') {
+        statement.items = [['concept', '']]
+      }
+      if (type=='#') {
+        statement.items = [['tag', '']]
+      }
+      if (type=='[]--[]') {
+        statement.items = [['concept', ''],['relation', ''],['concept', '']]
+      }
+      if (type=='#--[]') {
+        statement.items = [['tag', ''],['relation', ''],['concept', '']]
+      }
+      if (type=='#--#') {
+        statement.items = [['tag', ''],['relation', ''],['tag', '']]
+      }
+
+      this.statements.push(statement)
+
+      EventBus.$emit('updateStatementsDrag')
     },
     getObjectById(id) {
       for(let i=0; i<this.concepts.length; i++) {
@@ -197,18 +258,21 @@ export default {
     },
     addAction() {
       let action = new Action()
-      action.x = 100
-      action.y = 100
+      action.x = Math.floor(Math.random()*100) + 150
+      action.y = Math.floor(Math.random()*100) + 150
 
       this.actions.push(action)
 
-      this.$nextTick(()=>{
-        if (this.$refs.action) {
-            this.$refs.action.forEach((actionElement) => {
-              this.dragConcept(actionElement)
-            })
-          }
-      })
+      EventBus.$emit('updateActionsDrag')
+    },
+    addClause() {
+      let condition = new Condition()
+      condition.x = Math.floor(Math.random()*100) + 150
+      condition.y = Math.floor(Math.random()*100) + 150
+
+      this.conditions.push(condition)
+
+      EventBus.$emit('updateConditionsDrag')
     },
     openQuery(object) {
       this.showing = 'query'
@@ -217,7 +281,6 @@ export default {
       })
     },
     saveData() {
-      console.log(1)
       const data = {
         'showing' : this.showing,
         'concepts' : this.concepts,
@@ -260,10 +323,20 @@ export default {
       else if (item.objectType == 'relation') {
         this.relations = this.relations.filter(relation => relation.id !== item.id);
       }
+      else if (item.objectType == 'statement') {
+        this.statements = this.statements.filter(statement => statement.id !== item.id);
+      }
+      else if (item.objectType == 'condition') {
+        this.conditions = this.conditions.filter(condition => condition.id !== item.id);
+      }
+      else if (item.objectType == 'action') {
+        this.actions = this.actions.filter(action => action.id !== item.id);
+      }
       else {
         this.concepts = this.concepts.filter(concept => concept.id !== item.id);
       }
-    }
+    },
+
   },
   watch: {
     showing: 'saveData',
@@ -290,6 +363,9 @@ export default {
 
     this.loaded = true;
 
+    //Generic Events
+    EventBus.$on('saveData', this.saveData)
+    
     //BoardView Events
     EventBus.$on('openQuery', this.openQuery)
     EventBus.$on('addItem', this.addItem)
@@ -435,8 +511,9 @@ export default {
     padding: 5px;
     cursor: grab;
     transform: translate(-50%, -50%);
-    outline: 1px solid purple;
+    border: 1px solid purple;
     min-height: 26px;
+    width: 80px;
     border-radius: 5px;
   }
   .condition-inner {
@@ -444,15 +521,14 @@ export default {
     justify-content: center;
     align-items: center;
     padding: 3px;
-    width: 70px;
     position: relative;
     flex-direction: column;
-    gap: 5px;
+    gap: 10px;
   }
   .condition input {
     outline: none;
     border-radius: 5px;
-    width: 70px;
+    width: 60px;
     height: 26px;
     border: 1px solid purple;
     text-align: center;
@@ -464,13 +540,15 @@ export default {
     padding: 5px;
     cursor: grab;
     transform: translate(-50%, -50%);
+    border: 1px solid orange;
+    min-height: 26px;
+    border-radius: 5px;
   }
   .action-inner {
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 3px;
-    width: 70px;
     position: relative;
     flex-direction: column;
     gap: 5px;
@@ -478,17 +556,20 @@ export default {
   .action input {
     outline: none;
     border-radius: 5px;
-    min-width: 60px;
+    width: 80px;
+    height: 26px;
     border: 1px solid orange;
+    text-align: center;
+    color: white;
   }
 
   .statement {
     position: absolute;
-    border-radius: 5px !important;
+    border-radius: 5px;
     padding: 5px;
     cursor: grab;
     transform: translate(-50%, -50%);
-    outline: 1px solid yellow;
+    border: 1px solid yellow;
   }
   .statement-inner {
     display: flex;
@@ -545,16 +626,44 @@ export default {
     transform: translate(-50%, -50%);
   }
   .statement-node {
-    top: 18px;
+    top: 50%;
+    transform: translate(-50%, -50%);
     right: -8px;
+    background: yellow;
+    cursor: pointer;
+  }
+  .statement-node .node-inner {
+    background: black;
   }
   .condition-node {
-    top: 0px;
-    left: 44px;
+    top: 50%;
+    transform: translate(50%, -50%);
+    left: -9px;
+    background: yellow;
+    cursor: pointer;
   }
-  .action-node {
-    bottom: -8px;
-    left: 44px;
+  .condition-node .node-inner {
+    background: black;
+  }
+  .condition .action-node {
+    top: 50%;
+    transform: translate(-50%, -50%);
+    right: -8px;
+    background: orange;
+    cursor: pointer;
+  }
+  .condition .action-node .node-inner {
+    background: black;
+  }
+  .action .action-node {
+    top: 50%;
+    transform: translate(50%, -50%);
+    left: -9px;
+    background: orange;
+    cursor: pointer;
+  }
+  .action .action-node .node-inner {
+    background: black;
   }
 
   .node:hover {
@@ -570,7 +679,7 @@ export default {
     border-radius: 50%;
   }
   .relation-node .node-inner {
-    background: #fff;
+    background: #ccc;
   }
   #generalSVG {
     position: absolute;

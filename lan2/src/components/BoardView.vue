@@ -143,8 +143,10 @@
       this.id = Math.floor(Math.random()*100000)
       this.subject = null
       this.object = null
-      this.offsetX = 0
-      this.offsetY = 0
+      this.offsetX1 = 0
+      this.offsetX2 = 0
+      this.offsetY1 = 0
+      this.offsetY2 = 0
 
       //Attributes for easier parsing
       this.categories = []
@@ -417,6 +419,8 @@
         }
 
         function closeDragElement() {
+          EventBus.$emit('saveData')
+
           document.onmouseup = null;
           document.onmousemove = null;
 
@@ -438,13 +442,16 @@
     },
 
     created() {
-      this.$nextTick(()=>{
+      setTimeout(()=>{
         if (this.$refs.concept) {
           this.$refs.concept.forEach((conceptElement) => {
             this.dragConcept(conceptElement)
           })
         }
-      })
+        else {
+          console.log(1)
+        }
+      }, 500)
     }
   }
 </script>
