@@ -33,7 +33,7 @@
     </svg>
     <div class="statement" v-for="statement in statements" :key="statement.id" :style="{ top : statement.y+'px', left : statement.x+'px'}" :data-id="statement.id" ref="statement" draggable="true">
       <div class="statement-inner">
-        <input v-for="(item, i) in statement.items" :key="i" @mousedown.stop style="width: 0px" v-model="item[1]" :class="'statement-'+item[0]">
+        <input v-for="(item, i) in statement.items" :key="i" @mousedown.stop style="width: 0px" v-model="item[1]" :class="'statement-'+item[0]" @input="saveData">
       </div>
       <span class="node statement-node" @mousedown.stop>
         <span class="node-inner" @click="createCondition">
@@ -54,13 +54,14 @@
           <div v-if="item[1]">
             <input @mousedown.stop v-model="item[0]" :disabled="!item[1]">
           </div>
-          <div v-else style="display: flex; justify-content: space-evenly; width:100%;">
-            <span v-for="(element, key) in item[0].items[0]" :key="key">{{ element }}</span>
+          <div v-else style="display: flex; justify-content: space-evenly; width:100%; gap: 5px">
+            <span v-for="(element, i) in item[0].items" :key="i">{{ element[1] }}</span>
           </div>
         </div>
       </div>
     </div>
-    <div class="action" v-for="(action, i) in actions" :key="i" :style="{ top : action.y+'px', left : action.x+'px'}" :data-id="action.id" ref="action" draggable="true">
+    <!-- Una acción se puede volver en statement al final, y volver asi en un ciclo-->
+    <div :class="['action', evaluates(action) ? 'true' : 'false' ]" v-for="(action, i) in actions" :key="i" :style="{ top : action.y+'px', left : action.x+'px'}" :data-id="action.id" ref="action" draggable="true">
       <span class="node action-node" @mousedown.stop>
         <span class="node-inner" @click="createAction">
       </span>
@@ -93,7 +94,16 @@
       },
       statements: {
           required: true,
-      }
+      },
+      concepts: {
+          required: true,
+      },
+      relations: {
+          required: true,
+      },
+      categories: {
+          required: true,
+      },
     },
 
     methods: {
@@ -353,6 +363,76 @@
               })
             }
         })
+      },
+      saveData() {
+        EventBus.$emit('saveData')
+      }
+    },
+
+    computed: {
+      evaluates() {
+        return (action) => {
+        if (action.condition && action.condition.items) {
+          let values = []
+
+          for (let i=0; i<action.condition.items.length; i++) {
+            let item = action.condition.items[i]
+            if (item[1]) {
+              values.push(item[0])
+            }
+            else {
+              let type = item[0].type.toString()
+              if (type=='[]') {
+                let flag = false
+                for (let j=0; j<this.concepts.length; j++) {
+                  if (this.concepts[j].name == item[0].items[0][1]) {
+                    flag = true
+                    break
+                  }
+                }
+                values.push(flag)
+              }
+              if (type=='#') {
+                let flag = false
+                for (let j=0; j<this.concepts.length; j++) {
+                  if (this.concepts[j].name == item[0].items[0][0]) {
+                    flag = true
+                    break
+                  }
+                }
+                values.push(flag)
+              }
+              if (type=='[]--[]') {
+                let flag = false
+                values.push(flag)
+              }
+              if (type=='#--[]') {
+                let flag = false
+                values.push(flag)
+              }
+              if (type=='#--#') {
+                let flag = false
+                values.push(flag)
+              }
+            }
+          }
+
+          let result = values[0];
+
+          for (let i = 1; i < values.length-1; i += 2) {
+            const operator = values[i];
+            const operand = values[i + 1];
+
+            if (operator === 'and') {
+              result = result && operand;
+            } else if (operator === 'or') {
+              result = result || operand;
+            }
+          }
+          return result
+        }
+        return false
+        }
       }
     },
 

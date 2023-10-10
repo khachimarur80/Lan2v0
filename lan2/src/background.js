@@ -1,6 +1,6 @@
 'use strict'
 
-import { app, protocol, BrowserWindow, ipcMain } from 'electron'
+import { app, protocol, BrowserWindow, ipcMain, dialog } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 const path = require('path');
@@ -51,6 +51,11 @@ app.on('activate', () => {
 })
 
 app.on('ready', async () => {
+  protocol.registerFileProtocol('safe-protocol', (request, callback) => {
+    const pathname = decodeURI(request.url.replace('safe-protocol://', ''));
+    return callback(decodeURIComponent(pathname));
+  });
+
   if (isDevelopment && !process.env.IS_TEST) {
     try {
       await installExtension(VUEJS_DEVTOOLS)
@@ -68,6 +73,40 @@ app.on('ready', async () => {
     fs.readFile(filePath, 'utf-8', (err, data) => {
       const message = JSON.parse(data);
       win.webContents.send('get-data-response', message);
+    });
+  });
+  ipcMain.on('open-file-browser', (event, type) => {
+    let filters;
+
+    if (type === 'image') {
+      filters = [{ name: 'Images', extensions: ['jpg', 'png'] }];
+    } 
+    else if (type === 'text') {
+      filters = [{ name: 'Markdown, Text, JSON', extensions: ['md', 'txt', 'json'] }];
+    } else {
+      // Default to open any file type if type is not specified or recognized.
+      filters = [];
+    }
+
+    const options = {
+      filters: filters,
+    };
+  
+    dialog.showOpenDialog(win, options).then(result => {
+      if (!result.canceled && result.filePaths.length > 0) {
+        const selectedDocument = result.filePaths[0];
+        if (type === 'text') {
+          fs.readFile(selectedDocument, 'utf-8', (err, data) => {
+            win.webContents.send('open-file-browser-response', data);
+          });
+        }
+        else {
+          win.webContents.send('open-file-browser-response', selectedDocument);
+        }
+      }
+      else {
+        win.webContents.send('open-file-browser-response' , null)
+      }
     });
   });
 })

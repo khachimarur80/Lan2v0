@@ -34,21 +34,30 @@
             mdi-information
           </v-icon>
         </v-btn>
-        <v-btn dense small icon>
+        <!--Al añadir file, puedes añadir, .txt, o .md. En el futuro, un .json de otra función o mapa! -->
+        <v-btn dense small icon @click="addFile(concept)">
           <v-icon>
             mdi-file
           </v-icon>
         </v-btn>
-        <v-btn dense small icon>
-          <v-icon>
-            mdi-link
-          </v-icon>
-        </v-btn>
-        <v-btn dense small icon>
+        <v-btn dense small icon @click="addImage(concept)">
           <v-icon>
             mdi-image
           </v-icon>
         </v-btn>
+        <v-btn dense small icon @click="addLink(concept)" v-if="!addLinkFlag">
+          <v-icon>
+            mdi-link
+          </v-icon>
+        </v-btn>
+        <div v-else class="d-flex">
+          <v-btn @click="addLink(concept)" dense small icon>
+            <v-icon>
+              mdi-close
+            </v-icon>
+          </v-btn>
+          <input v-model="addingLink.contents" style="border-color: white" @mousedown.stop autofocus @input="concept.data = 'link'">
+        </div>
       </div>
       <div class="concept-inner">
         <input v-model="concept.name" @mousedown.stop @focus="focusItem(concept)">
@@ -93,21 +102,6 @@
             mdi-information
           </v-icon>
         </v-btn>
-        <v-btn dense small icon>
-          <v-icon>
-            mdi-link
-          </v-icon>
-        </v-btn>
-        <v-btn dense small icon>
-          <v-icon>
-            mdi-file
-          </v-icon>
-        </v-btn>
-        <v-btn dense small icon>
-          <v-icon>
-            mdi-image
-          </v-icon>
-        </v-btn>
       </div>
       <input v-model="relation.name" @focus="focusItem(relation)">
       <div class="relation-info">
@@ -126,6 +120,7 @@
       this.name = ''
       this.id = Math.floor(Math.random()*100000)
       this.data = 'file'
+      this.contents = null
 
       //Board values
       this.x = 0
@@ -170,6 +165,8 @@
       addTagFlag: false,
       addingTag: '',
       creatingRelation: [],
+      addLinkFlag: false,
+      addingLink: null,
     }),
 
     props: {
@@ -188,6 +185,31 @@
     },
 
     methods: {
+      addLink(concept) {
+        if (!this.addLinkFlag) {
+          this.addLinkFlag = true
+          this.addingLink = concept
+        }
+        else {
+          this.addLinkFlag = false
+        }
+      },
+      async addFile(concept) {
+        const message = await new Promise(resolve => {
+          window.electronAPI.openFileBrowser('text')
+          window.electronAPI.response('open-file-browser-response', resolve)
+        });
+        concept.data = 'file'
+        concept.contents = message
+      },
+      async addImage(concept) {
+        const message = await new Promise(resolve => {
+          window.electronAPI.openFileBrowser('image')
+          window.electronAPI.response('open-file-browser-response', resolve)
+        });
+        concept.data = 'image'
+        concept.contents = message
+      },
       openQuery(object) {
         EventBus.$emit('openQuery', object)
       },

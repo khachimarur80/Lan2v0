@@ -101,7 +101,7 @@
         </v-card>
       </div>
       <div id="data">
-        <v-card width="100%" height="100%" flat class="pa-3">
+        <v-card width="100%" height="100%" flat class="pa-3 overflow-auto">
           <v-card-title>
             <div class="text-h4" :style="{ color: getTextColor(selectedQuery) }">
               {{ selectedQuery.name }}
@@ -113,6 +113,31 @@
             </div>
             <div class="text-body-1">
               Data: {{ selectedQuery.data }}
+            </div>
+            <div class="text-body-1" v-if="selectedQuery.data=='link'">
+              <div class="text-body-1">Contents: </div><br>
+              <iframe
+                :src="selectedQuery.contents"
+                width="400"
+                height="400"
+                frameborder="0"
+                seamless
+              ></iframe>
+            </div>
+            <div class="text-body-1" v-if="selectedQuery.data=='file'">
+              <div class="text-body-1">Contents: </div><br>
+              <div class="markdown" v-html="compiledMarkdown(selectedQuery.contents)"></div><br>
+            </div>
+            <div v-if="selectedQuery.data=='image'">
+              <div class="text-body-1">Contents: </div><br>
+              <v-dialog v-model="fullImage" fullscreen hide-overlay>
+                <template v-slot:activator="{ on, attrs }">
+                  <v-img v-bind="attrs" v-on="on" @click="fullImage=true" :src="'safe-protocol://' + selectedQuery.contents" contain ></v-img>
+                </template>
+                <div style="height: 100vh; width: 100h; background: #191919;" class="pa-5">
+                  <v-img @click="fullImage=false" :src="'safe-protocol://' + selectedQuery.contents" contain max-height="100%" max-width="100%"></v-img>
+                </div>
+              </v-dialog>
             </div>
             <div class="text-body-1">
               Relations: {{ selectedQuery.relations }}
@@ -187,6 +212,7 @@
 <script>
   import EventBus from '@/event-bus'
   import colors from 'vuetify/lib/util/colors';
+  import { marked } from 'marked';
 
   export default {
     name: 'QueryView',
@@ -199,6 +225,7 @@
 
       objectType: null,
       contentType: null,
+      fullImage: false,
     }),
 
     props: {
@@ -223,6 +250,9 @@
     },
 
     methods: {
+      compiledMarkdown(md) {
+        return marked.parse(md);
+      },
       getTextColor(item) {
         if (item) {
           if (item.objectType == 'category') {
@@ -335,7 +365,7 @@
 <style scoped>
   #query {
     height: calc(100vh - 80px);
-    width: 100%;
+    width: 100h;
     cursor: crosshair;
     position: relative;
     display: flex;
@@ -343,11 +373,11 @@
     padding: 20px;
   }
   #filter {
-    flex: 1;
+    width: 50%;
     height: 100%;
   }
   #data {
-    flex: 1;
+    width: 50%;
     height: 100%;
   }
 </style>

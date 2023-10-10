@@ -11,4 +11,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     saveData: (data) => ipcRenderer.send('save-data', data),
     getData: () => ipcRenderer.send('get-data'),
+    openFileBrowser: (type) => ipcRenderer.send('open-file-browser', type),
 })
