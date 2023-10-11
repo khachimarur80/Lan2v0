@@ -4,10 +4,10 @@
       <line 
         v-for="(relation, i) in relations" 
         :key="i" 
-        :x1="relation.object.x+relation.offsetX1+'px'"
-        :y1="relation.object.y+relation.offsetY1+'px'"
-        :x2="relation.subject.x+relation.offsetX2+'px'"
-        :y2="relation.subject.y+relation.offsetY2+'px'"
+        :x1="getObjectById(relation.object).x+relation.offsetX1+'px'"
+        :y1="getObjectById(relation.object).y+relation.offsetY1+'px'"
+        :x2="getObjectById(relation.subject).x+relation.offsetX2+'px'"
+        :y2="getObjectById(relation.subject).y+relation.offsetY2+'px'"
         width="1"
         stroke="white"
       >
@@ -63,7 +63,7 @@
         <input v-model="concept.name" @mousedown.stop @focus="focusItem(concept)">
       </div>
       <div class="concept-info">
-        <span v-for="category in concept.categories" :key="category.id">{{ category.name }}</span>
+        <span v-for="category in concept.categories" :key="category">{{ getObjectById(category).name }}</span>
       </div>
       <span class="node up" @mousedown.stop>
         <span class="node-inner" @click="createRelation">
@@ -82,7 +82,7 @@
         </span>
       </span>
     </div>
-    <div class="relation" v-for="relation in relations" :key="relation.id" :style="{ top : (relation.object.y+relation.subject.y)/2 + 'px', left : (relation.object.x+relation.subject.x)/2 + 'px' }" :data-id="relation.id">
+    <div class="relation" v-for="relation in relations" :key="relation.id" :style="{ top : (getObjectById(relation.object).y+getObjectById(relation.subject).y)/2 + 'px', left : (getObjectById(relation.object).x+getObjectById(relation.subject).x)/2 + 'px' }" :data-id="relation.id">
       <div class="relation-toolbar" v-if="focusedItem==relation">
         <v-btn @click="addTagFlag=true" v-if="!addTagFlag" dense small icon>
           <v-icon>
@@ -219,19 +219,9 @@
             return this.concepts[i]
           }
         }
-        for(let i=0; i<this.statements.length; i++) {
-          if (this.statements[i].id==id) {
-            return this.statements[i]
-          }
-        }
-        for(let i=0; i<this.actions.length; i++) {
-          if (this.actions[i].id==id) {
-            return this.actions[i]
-          }
-        }
-        for(let i=0; i<this.conditions.length; i++) {
-          if (this.conditions[i].id==id) {
-            return this.conditions[i]
+        for(let i=0; i<this.categories.length; i++) {
+          if (this.categories[i].id==id) {
+            return this.categories[i]
           }
         }
         for(let i=0; i<this.relations.length; i++) {
@@ -317,7 +307,6 @@
         else {
           let category = new Category(this.addingTag)
           EventBus.$emit('addItem', category)
-
           EventBus.$emit('addTag', object, category)
         }
         this.addTagFlag = false
@@ -349,15 +338,13 @@
           element.parentElement.classList.add('relation-node')
           this.creatingRelation.push([conceptTarget, coords])
           let relation = new Relation()
-          relation.object = this.creatingRelation[0][0]
-          relation.subject = this.creatingRelation[1][0]
+          relation.object = this.creatingRelation[0][0].id
+          relation.subject = this.creatingRelation[1][0].id
 
-          relation.object = this.creatingRelation[0][0]
-          relation.subject = this.creatingRelation[1][0]
-          relation.offsetX1 = - relation.object.x + this.creatingRelation[0][1].x + this.creatingRelation[0][1].width/2
-          relation.offsetY1 = - relation.object.y + this.creatingRelation[0][1].y - 56 + this.creatingRelation[0][1].height/2
-          relation.offsetX2 = - relation.subject.x + this.creatingRelation[1][1].x + this.creatingRelation[1][1].width/2
-          relation.offsetY2 = -relation.subject.y + this.creatingRelation[1][1].y - 56 + this.creatingRelation[1][1].height/2
+          relation.offsetX1 = - this.creatingRelation[0][0].x + this.creatingRelation[0][1].x + this.creatingRelation[0][1].width/2
+          relation.offsetY1 = - this.creatingRelation[0][0].y + this.creatingRelation[0][1].y - 56 + this.creatingRelation[0][1].height/2
+          relation.offsetX2 = - this.creatingRelation[1][0].x + this.creatingRelation[1][1].x + this.creatingRelation[1][1].width/2
+          relation.offsetY2 = - this.creatingRelation[1][0].y + this.creatingRelation[1][1].y - 56 + this.creatingRelation[1][1].height/2
 
           let line = document.getElementById('creating-relation-line');
           line.remove()

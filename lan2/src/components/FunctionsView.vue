@@ -5,8 +5,8 @@
         <template v-for="(item, i) in condition.items">
           <line 
             v-if="!item[1]"
-            :x1="item[0].x+item[0].offsetX+'px'"
-            :y1="item[0].y+item[0].offsetY+'px'"
+            :x1="getObjectById(item[0]).x+getObjectById(item[0]).offsetX+'px'"
+            :y1="getObjectById(item[0]).y+getObjectById(item[0]).offsetY+'px'"
             :x2="condition.x+condition.statementOffsetX+'px'"
             :y2="condition.y+condition.statementOffsetY+'px'"
             width="1"
@@ -20,8 +20,8 @@
         {{ action.condition }}
         <line 
           v-if="action.condition"
-          :x1="action.condition.x+action.condition.actionOffsetX+'px'"
-          :y1="action.condition.y+action.condition.actionOffsetY+'px'"
+          :x1="getObjectById(action.condition).x+getObjectById(action.condition).actionOffsetX+'px'"
+          :y1="getObjectById(action.condition).y+getObjectById(action.condition).actionOffsetY+'px'"
           :x2="action.x+action.offsetX+'px'"
           :y2="action.y+action.offsetY+'px'"
           width="1"
@@ -50,12 +50,12 @@
         </span>
       </span>
       <div class="condition-inner">
-        <div v-for="(item, i) in condition.items" :key="i" style="width:100%;">
+        <div v-for="(item, i) in condition.items.slice(0,-1)" :key="i" style="width:100%;">
           <div v-if="item[1]">
             <input @mousedown.stop v-model="item[0]" :disabled="!item[1]">
           </div>
           <div v-else style="display: flex; justify-content: space-evenly; width:100%; gap: 5px">
-            <span v-for="(element, i) in item[0].items" :key="i">{{ element[1] }}</span>
+            <span v-for="(element, i) in getObjectById(item[0]).items" :key="i">{{ element[1] }}</span>
           </div>
         </div>
       </div>
@@ -238,7 +238,7 @@
 
           element.parentElement.classList.add('relation-node')
 
-          conceptTarget.condition = this.creatingAction[0][0]
+          conceptTarget.condition = this.creatingAction[0][0].id
 
           this.creatingAction[0][0].actionOffsetX = -this.creatingAction[0][0].x + this.creatingAction[0][1].x + this.creatingAction[0][1].width/2
           this.creatingAction[0][0].actionOffsetY = -this.creatingAction[0][0].y + this.creatingAction[0][1].y + this.creatingAction[0][1].height/2 - 56
@@ -278,7 +278,7 @@
 
           element.parentElement.classList.add('relation-node')
 
-          conceptTarget.items.push([this.creatingCondition[0][0], false])
+          conceptTarget.items.push([this.creatingCondition[0][0].id, false])
           conceptTarget.items.push(['and', true])
 
           let line = document.getElementById('creating-condition-line');
@@ -372,20 +372,23 @@
     computed: {
       evaluates() {
         return (action) => {
-        if (action.condition && action.condition.items) {
+        if (action.condition) {
           let values = []
+          let condition = this.getObjectById(action.condition)
 
-          for (let i=0; i<action.condition.items.length; i++) {
-            let item = action.condition.items[i]
+          for (let i=0; i<condition.items.length; i++) {
+            let item = condition.items[i]
             if (item[1]) {
               values.push(item[0])
             }
             else {
-              let type = item[0].type.toString()
+              let statement = this.getObjectById(item[0])
+              let type = statement.type.toString()
+
               if (type=='[]') {
                 let flag = false
                 for (let j=0; j<this.concepts.length; j++) {
-                  if (this.concepts[j].name == item[0].items[0][1]) {
+                  if (this.concepts[j].name == statement.items[0][1]) {
                     flag = true
                     break
                   }
@@ -394,9 +397,10 @@
               }
               if (type=='#') {
                 let flag = false
-                for (let j=0; j<this.concepts.length; j++) {
-                  if (this.concepts[j].name == item[0].items[0][0]) {
+                for (let j=0; j<this.categories.length; j++) {
+                  if (this.categories[j].name == statement.items[0][1]) {
                     flag = true
+                    console.log(2)
                     break
                   }
                 }
@@ -404,6 +408,31 @@
               }
               if (type=='[]--[]') {
                 let flag = false
+                let subject = null
+                let object = null
+                let relation = null
+
+                for (let j=0; j<this.concepts.length; j++) {
+                  if (this.concepts[j].name == statement.items[0][1]) {
+                    subject = this.concepts[j].id
+                    break
+                  }
+                }
+                for (let j=0; j<this.relations.length; j++) {
+                  if (this.relations[j].name == statement.items[1][1]) {
+                    relation = this.relations[j]
+                    break
+                  }
+                }
+                for (let j=0; j<this.concepts.length; j++) {
+                  if (this.concepts[j].name == statement.items[2][1]) {
+                    object = this.concepts[j].id
+                    break
+                  }
+                }
+                if (relation.subject==object && relation.object===subject) {
+                  flag = true
+                }
                 values.push(flag)
               }
               if (type=='#--[]') {

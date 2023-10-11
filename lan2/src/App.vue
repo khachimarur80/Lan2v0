@@ -204,7 +204,7 @@ export default {
     actions: [],
     selectingArea: false,
     drawer: false,
-    loaded: true,
+    loaded: false,
   }),
   methods: {
     createStatement(type) {
@@ -317,7 +317,7 @@ export default {
     },
     addTag(target, tag) {
       tag.objects.push(target.id)
-      target.categories.push(tag)
+      target.categories.push(tag.id)
     },
     deleteItem(item) {
       if (item.objectType == 'category') {
@@ -536,6 +536,8 @@ export default {
     border: 1px solid purple;
     text-align: center;
     color: white;
+    margin-left: 50%;
+    transform: translateX(-50%);
   }
   .action {
     position: absolute;
@@ -588,6 +590,7 @@ export default {
     min-width: 60px;
     background: #191919;
     color: white;
+    padding-left: 5px;
   }
 
   .statement-inner::before {

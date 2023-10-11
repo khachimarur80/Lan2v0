@@ -159,10 +159,10 @@
                 Id: {{ selectedQuery.id }}
               </div>
               <div class="text-body-1">
-                Subject: {{ selectedQuery.subject.name }}
+                Subject: {{ selectedQuery.subject }}
               </div>
               <div class="text-body-1">
-                Object: {{ selectedQuery.object.name }}
+                Object: {{ selectedQuery.object }}
               </div>
               <div class="text-body-1">
                 Categories: {{ selectedQuery.categories }}
@@ -251,7 +251,10 @@
 
     methods: {
       compiledMarkdown(md) {
-        return marked.parse(md);
+        if (md) {
+          return marked.parse(md);
+        }
+        return md
       },
       getTextColor(item) {
         if (item) {
