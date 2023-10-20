@@ -1,0 +1,4 @@
+theme: jekyll-theme-cayman
+title: Lan2
+plugins:
+  - jekyll-seo-tag
