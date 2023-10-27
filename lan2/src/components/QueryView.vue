@@ -2,148 +2,76 @@
   <v-container>
     <div id="query">
       <div id="filter">
-        <v-card width="100%" height="100%" flat class="pa-3">
-          <div>
+        <v-row dense no-gutters class="mt-1">
+          <v-col cols="4" class="d-flex justify-center">
+          </v-col>
+          <v-col cols="4" class="d-flex align-center">
             <v-autocomplete
               v-model="select"
               :loading="loading"
-              :items="objects"
+              :items="filtered"
               item-value="id"
-              cache-items
+              :cache-items="false"
               flat
               hide-no-data
               hide-details
               dense
               label="Search for object"
               outlined
-              class="mt-3"
               item-text="name"
               @input="selectItem">
               <template v-slot:item="{ item }">
-                {{ item.name }}
+                <div color="red">{{ item.name }}</div>
               </template>
             </v-autocomplete>
-            <v-combobox
-              :items="categories"
-              item-value="id"
-              item-text="name"
-              label="Tags"
-              chips
-              multiple
-              outlined
-              dense
-              class="mt-3">
-            </v-combobox>
-            <div class="d-flex align-center justify-center mt-n3">
-              <v-btn-toggle v-model="objectType" dense>
-                <v-btn>
-                  <v-icon color="red">mdi-pound</v-icon>
-                </v-btn>
-
-                <v-btn>
-                  <v-icon color="green">mdi-code-brackets</v-icon>
-                </v-btn>
-
-                <v-btn>
-                  <v-icon color="blue">mdi-transit-connection-horizontal</v-icon>
-                </v-btn>
-
-                <v-btn>
-                  <v-icon color="yellow">
-                    mdi-code-tags
-                  </v-icon>
-                </v-btn>
-
-                <v-btn>
-                  <v-icon color="purple">
-                    mdi-source-fork
-                  </v-icon>
-                </v-btn>
-
-                <v-btn>
-                  <v-icon color="orange">
-                    mdi-skew-more
-                  </v-icon>
-                </v-btn>
-              </v-btn-toggle>
-            </div>
-            <div class="d-flex align-center justify-center mt-3">
-              <v-btn-toggle v-model="contentType" dense v-if="objectType==1">
-                <v-btn>
-                  <v-icon>mdi-file</v-icon>
-                </v-btn>
-
-                <v-btn>
-                  <v-icon>mdi-image</v-icon>
-                </v-btn>
-
-                <v-btn>
-                  <v-icon>mdi-link</v-icon>
-                </v-btn>
-              </v-btn-toggle>
-            </div>
-          </div>
-          <v-card-text>
-            <div v-for="item in filtered" :key="item.id" @click="setQuery(item)"  :style="{ color: getTextColor(item) }" class="d-flex align-center justify-space-between">
-              <div class="text-body-2" v-if="item.name">
-                {{ item.name }}
-              </div>
-              <div class="text-body-2" v-else>
-                #{{ item.id }}
-              </div>
-              <v-btn icon dense x-small color="orange" @mousedown.stop @click="deleteItem(item)">
-                <v-icon>
-                  mdi-close
-                </v-icon>
-              </v-btn>
-            </div>
-          </v-card-text>
-        </v-card>
+          </v-col>
+          <v-col cols="4" class="d-flex align-center">
+            <v-icon v-if="objectType != null" :color="objectTypeColor" class="mx-2">
+              {{ objectTypeIcon }}
+            </v-icon>
+            <v-icon v-if="(contentType != null) && (objectType == 1)" class="mx-2">
+              {{ contentTypeIcon }}
+            </v-icon>
+          </v-col>
+        </v-row>
       </div>
       <div id="data">
-        <v-card width="100%" height="100%" flat class="pa-3 overflow-auto">
+        <v-card width="50%" height="100%" flat class="pa-3 overflow-auto" v-if="selectedQuery.id">
           <v-card-title>
-            <div class="text-h4" :style="{ color: getTextColor(selectedQuery) }">
-              {{ selectedQuery.name }}
+            <div class="text-h4">
+              <input v-model="selectedQuery.name" :style="{ color: getTextColor(selectedQuery), outline: 'none', }" @input="saveData">
             </div>
+            <div class="text-caption pl-1" :style="{ color: getTextColor(selectedQuery)}">
+              #{{ selectedQuery.id }}
+            </div>
+            <v-btn icon dense color="red" absolute top right style="top: 28px" @click="deleteItem(selectedQuery)">
+              <v-icon>
+                mdi-delete-outline
+              </v-icon>
+            </v-btn>
           </v-card-title>
           <v-card-text v-if="selectedQuery.objectType=='concept'">
-            <div class="text-body-1">
-              Id: {{ selectedQuery.id }}
+            <v-divider class="my-1"></v-divider>
+            <div class="text-h6 mb-2">
+              Data type
+            </div>
+            <div style="width: 150px">
+              <v-select v-model="selectedQuery.data" :items="dataTypes" solo dense hide-details @input="changeDataType">
+              </v-select>
+            </div>
+            <v-divider class="my-1 mt-4"></v-divider>
+            <div class="text-h6 mb-2">
+              Relations
             </div>
             <div class="text-body-1">
-              Data: {{ selectedQuery.data }}
+              {{ selectedQuery.relations }}
             </div>
-            <div class="text-body-1" v-if="selectedQuery.data=='link'">
-              <div class="text-body-1">Contents: </div><br>
-              <iframe
-                :src="selectedQuery.contents"
-                width="400"
-                height="400"
-                frameborder="0"
-                seamless
-              ></iframe>
-            </div>
-            <div class="text-body-1" v-if="selectedQuery.data=='file'">
-              <div class="text-body-1">Contents: </div><br>
-              <div class="markdown" v-html="compiledMarkdown(selectedQuery.contents)"></div><br>
-            </div>
-            <div v-if="selectedQuery.data=='image'">
-              <div class="text-body-1">Contents: </div><br>
-              <v-dialog v-model="fullImage" fullscreen hide-overlay>
-                <template v-slot:activator="{ on, attrs }">
-                  <v-img v-bind="attrs" v-on="on" @click="fullImage=true" :src="'safe-protocol://' + selectedQuery.contents" contain ></v-img>
-                </template>
-                <div style="height: 100vh; width: 100h; background: #191919;" class="pa-5">
-                  <v-img @click="fullImage=false" :src="'safe-protocol://' + selectedQuery.contents" contain max-height="100%" max-width="100%"></v-img>
-                </div>
-              </v-dialog>
+            <v-divider class="my-1 mt-4"></v-divider>
+            <div class="text-h6 mb-2">
+              Categories
             </div>
             <div class="text-body-1">
-              Relations: {{ selectedQuery.relations }}
-            </div>
-            <div class="text-body-1">
-              Categories: {{ selectedQuery.categories }}
+              {{ selectedQuery.categories }}
             </div>
           </v-card-text>
           <v-card-text v-if="selectedQuery.objectType=='category'">
@@ -204,6 +132,151 @@
               </div>
           </v-card-text>
         </v-card>
+        <v-card  width="300" v-if="!selectedQuery.id && objectType!=null">
+          <div v-if="objectType==0">
+            <v-card-title>
+              Create category
+            </v-card-title>
+            <v-card-text>
+              <v-text-field solo label="Category name ..." dense hide-details v-model="newCreation">
+              </v-text-field>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn text color="red" @click="createObject" :disabled="newCreation==''">
+                Create
+              </v-btn>
+            </v-card-actions>
+          </div>
+          <div v-if="objectType==1">
+            <v-card-title>
+              Create concept
+            </v-card-title>
+            <v-card-text class="pl-6">
+              Type : 
+              <v-icon v-if="contentType!=null">
+                {{ contentTypeIcon }}
+              </v-icon>
+              <v-icon v-else>
+                mdi-file
+              </v-icon>
+            </v-card-text>
+            <v-card-text>
+              <v-text-field solo label="Concept name ..." dense hide-details v-model="newCreation">
+              </v-text-field>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn text color="green" @click="createObject" :disabled="newCreation==''">
+                Create
+              </v-btn>
+            </v-card-actions>
+          </div>
+          <div v-if="objectType==2">
+            <v-card-title>
+              Create relation
+            </v-card-title>
+            <v-card-text>
+              <v-text-field solo label="Relation name ..." dense hide-details v-model="newCreation">
+              </v-text-field>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn text color="blue" @click="createObject" :disabled="newCreation==''">
+                Create
+              </v-btn>
+            </v-card-actions>
+          </div>
+          <div v-if="objectType==3">
+            <v-card-title>
+              Create statement
+            </v-card-title>
+            <v-card-text>
+              <v-text-field solo label="Create name ..." dense hide-details v-model="newCreation">
+              </v-text-field>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn text color="yellow" @click="createObject" :disabled="newCreation==''">
+                Create
+              </v-btn>
+            </v-card-actions>
+          </div>
+          <div v-if="objectType==4">
+            <v-card-title>
+              Create condition
+            </v-card-title>
+            <v-card-text>
+              <v-text-field solo label="Condition name ..." dense hide-details v-model="newCreation">
+              </v-text-field>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn text color="purple" @click="createObject" :disabled="newCreation==''">
+                Create
+              </v-btn>
+            </v-card-actions>
+          </div>
+          <div v-if="objectType==5">
+            <v-card-title>
+              Create action
+            </v-card-title>
+            <v-card-text>
+              <v-text-field solo label="Action name ..." dense hide-details v-model="newCreation">
+              </v-text-field>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn text color="orange" @click="createObject" :disabled="newCreation==''">
+                Create
+              </v-btn>
+            </v-card-actions>
+          </div>
+        </v-card>
+        <v-card width="50%" height="100%" flat class="pa-3 overflow-auto" v-if="objectType==1 && selectedQuery.id">
+          <div class="text-body-1" v-if="selectedQuery.data=='link'" style="height: calc(100% - 130px);">
+            <div class="text-h5">Contents</div><br>
+            <div class="d-flex align-center">
+              <v-text-field v-model="selectedQuery.contents"></v-text-field>
+            </div>
+            <div class="iframe-container">
+              <iframe
+                :src="selectedQuery.contents"
+                width="100%"
+                height="100%"
+                frameborder="0"
+              ></iframe>
+            </div>
+          </div>
+          <div class="text-body-1" v-if="selectedQuery.data=='file'">
+            <div class="text-h5">Contents</div><br>
+            <div class="markdown" v-html="compiledMarkdown(selectedQuery.contents)"></div><br>
+          </div>
+          <div v-if="selectedQuery.data=='image'">
+            <div class="text-h5">Contents</div><br>
+            <div class="d-flex align-center">
+              <v-btn @click="setConceptImage" icon class="mr-3">
+                <v-icon>
+                  mdi-image
+                </v-icon>
+              </v-btn>
+              <span class="text-body-1" v-if="selectedQuery.contents">
+                {{ selectedQuery.contents.split('/').slice(-1)[0] }}
+              </span>
+            </div>
+            <v-divider class="mb-4 mt-2"></v-divider>
+            <div v-if="selectedQuery.contents" >
+              <v-dialog v-model="fullImage" fullscreen hide-overlay>
+                <template v-slot:activator="{ on, attrs }">
+                  <v-img v-bind="attrs" v-on="on" @click="fullImage=true" :src="'safe-protocol://' + selectedQuery.contents"></v-img>
+                </template>
+                <div style="height: 100vh; width: 100h; background: #191919;" class="pa-5 d-flex align-center justify-center"  @click="fullImage=false">
+                  <v-img :src="'safe-protocol://' + selectedQuery.contents" contain max-height="100%" max-width="100%"></v-img>
+                </div>
+              </v-dialog>
+            </div>
+          </div>
+        </v-card>
       </div>
     </div>
   </v-container>
@@ -223,9 +296,10 @@
       loading: false,
       select: null,
 
-      objectType: null,
-      contentType: null,
+      dataTypes: ['file', 'image', 'link'],
+
       fullImage: false,
+      newCreation: '',
     }),
 
     props: {
@@ -246,10 +320,34 @@
       },
       statements: {
           required: true,
+      },
+      objectType: {
+        required: true
+      },
+      contentType: {
+        required: true
       }
     },
 
     methods: {
+      changeDataType() {
+        this.selectedQuery.contents = null
+        this.saveData()
+      },
+      async setConceptImage() {
+        const message = await new Promise(resolve => {
+          window.electronAPI.openFileBrowser('image')
+          window.electronAPI.response('open-file-browser-response', resolve)
+        });
+        this.selectedQuery.contents = message
+      },
+      createObject() {
+        EventBus.$emit('createObject', this.newCreation, this.objectType, this.contentType)
+        this.newCreation = ''
+      },
+      saveData() {
+        EventBus.$emit('saveData')
+      },
       compiledMarkdown(md) {
         if (md) {
           return marked.parse(md);
@@ -280,6 +378,11 @@
         return 'white'
       },
       getObjectById(id) {
+        for(let i=0; i<this.categories.length; i++) {
+          if (this.categories[i].id==id) {
+            return this.categories[i]
+          }
+        }
         for(let i=0; i<this.concepts.length; i++) {
           if (this.concepts[i].id==id) {
             return this.concepts[i]
@@ -315,43 +418,78 @@
         this.selectedQuery = object
       },
       deleteItem(item) {
+        if (item.id == this.selectedQuery.id) {
+          this.selectedQuery = []
+        }
         EventBus.$emit('deleteItem', item)
-      }
+      },
     },
 
     computed: {
-      filtered() {
-        if (this.objectType===0) {
-          return this.categories
-        }
-        else if (this.objectType===1) {
-          if (this.contentType===0) {
-            return this.concepts.filter((concept) => concept.data=='file')
+      contentTypeIcon() {
+        let icons = [
+          'mdi-file',
+          'mdi-image',
+          'mdi-link',
+        ]
+        return icons[this.contentType]
+      },
+      objectTypeColor() {
+        let colors = [
+          'red',
+          'green',
+          'blue',
+          'yellow',
+          'purple',
+          'orange'
+        ]
+        return colors[this.objectType]
+      },
+      objectTypeIcon() {
+        let icons = [
+          'mdi-pound',
+          'mdi-code-brackets',
+          'mdi-transit-connection-horizontal',
+          'mdi-code-tags',
+          'mdi-source-fork',
+          'mdi-skew-more',
+        ]
+        return icons[this.objectType]
+      },
+      filtered: {
+        get () {
+          if (this.objectType==0) {
+            return this.categories
           }
-          if (this.contentType==1) {
-            return this.concepts.filter((concept) => concept.data=='image') 
+          else if (this.objectType==1) {
+            if (this.contentType==0) {
+              return this.concepts.filter((concept) => concept.data=='file')
+            }
+            if (this.contentType==1) {
+              return this.concepts.filter((concept) => concept.data=='image') 
+            }
+            if (this.contentType==2) {
+              return this.concepts.filter((concept) => concept.data=='link') 
+            }
+            else {
+              return this.concepts
+            }
           }
-          if (this.contentType===2) {
-            return this.concepts.filter((concept) => concept.data=='link') 
+          else if (this.objectType==2) {
+            return this.relations
+          }
+          else if (this.objectType==3) {
+            return this.statements
+          }
+          else if (this.objectType==4) {
+            return this.conditions
+          }
+          else if (this.objectType==5) {
+            return this.actions
           }
           else {
-            return this.concepts
+            return [...this.concepts, ...this.relations, ...this.categories, ...this.statements, ...this.conditions, ...this.actions]
           }
-        }
-        else if (this.objectType===2) {
-          return this.relations
-        }
-        else if (this.objectType===3) {
-          return this.statements
-        }
-        else if (this.objectType==4) {
-          return this.conditions
-        }
-        else if (this.objectType===5) {
-          return this.actions
-        }
-        else {
-          return [...this.concepts, ...this.relations, ...this.categories, ...this.statements, ...this.conditions, ...this.actions]
         }
       },
       objects() {
@@ -361,26 +499,46 @@
 
     created() {
       EventBus.$on('setQuery', this.setQuery)
-    }
+    },
+
   }
 </script>
 
 <style scoped>
+  .iframe-container {
+    height: 100%;
+    width: 100%;
+    width: calc(100% + 16px);
+    transfrom: translateX(8px);
+    position: relative;
+  }
+  .iframe-container:after {
+    content: '';
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    right: 0px;
+    width: 16px;
+    background: #1e1e1e;
+  }
   #query {
     height: calc(100vh - 80px);
     width: 100h;
-    cursor: crosshair;
     position: relative;
     display: flex;
+    flex-direction: column;
     gap: 20px;
-    padding: 20px;
   }
   #filter {
-    width: 50%;
-    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
   }
   #data {
-    width: 50%;
-    height: 100%;
+    height: calc(100vh - 160px);
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
   }
 </style>

@@ -8,76 +8,67 @@
         :y1="getObjectById(relation.object).y+relation.offsetY1+'px'"
         :x2="getObjectById(relation.subject).x+relation.offsetX2+'px'"
         :y2="getObjectById(relation.subject).y+relation.offsetY2+'px'"
-        width="1"
-        stroke="white"
       >
       </line>
     </svg>
     <div v-if="rectangle" class="rectangle" :style="{ top: rectangle.top, left: rectangle.left, width: rectangle.width, height: rectangle.height, } "></div>
-    <div class="concept" v-for="concept in concepts" :key="concept.id" :style="{ top : concept.y+'px', left : concept.x+'px'}" :data-id="concept.id" ref="concept" draggable="true">
-      <div class="concept-toolbar" v-if="focusedItem==concept">
-        <v-btn @click="addTagFlag=true" v-if="!addTagFlag" dense small icon>
-          <v-icon>
-            mdi-pound
-          </v-icon>
-        </v-btn>
-        <div v-else class="d-flex">
-          <v-btn @click="addTagFlag=false" dense small icon>
-            <v-icon>
-              mdi-close
-            </v-icon>
-          </v-btn>
-          <input v-model="addingTag" class="addTag" @mousedown.stop autofocus @keydown.enter="addTag(concept)">
-        </div>
-        <v-btn dense small icon @click="openQuery(concept)">
-          <v-icon>
-            mdi-information
-          </v-icon>
-        </v-btn>
-        <!--Al añadir file, puedes añadir, .txt, o .md. En el futuro, un .json de otra función o mapa! -->
-        <v-btn dense small icon @click="addFile(concept)">
-          <v-icon>
-            mdi-file
-          </v-icon>
-        </v-btn>
-        <v-btn dense small icon @click="addImage(concept)">
-          <v-icon>
-            mdi-image
-          </v-icon>
-        </v-btn>
-        <v-btn dense small icon @click="addLink(concept)" v-if="!addLinkFlag">
-          <v-icon>
-            mdi-link
-          </v-icon>
-        </v-btn>
-        <div v-else class="d-flex">
-          <v-btn @click="addLink(concept)" dense small icon>
-            <v-icon>
-              mdi-close
-            </v-icon>
-          </v-btn>
-          <input v-model="addingLink.contents" style="border-color: white" @mousedown.stop autofocus @input="concept.data = 'link'">
-        </div>
-      </div>
+    <div class="concept" v-for="concept in concepts" :key="concept.id" :style="{ top : concept.y + 'px', left : concept.x+'px' }" :data-id="concept.id" ref="concept" draggable="true">
       <div class="concept-inner">
-        <input v-model="concept.name" @mousedown.stop @focus="focusItem(concept)">
+        <v-card>
+          <div class="d-flex">
+            <v-btn @click="addTagFlag=true" v-if="!addTagFlag" dense small icon>
+              <v-icon>
+                mdi-pound
+              </v-icon>
+            </v-btn>
+            <div v-else class="d-flex">
+              <v-btn @click="addTagFlag=false" dense small icon>
+                <v-icon>
+                  mdi-close
+                </v-icon>
+              </v-btn>
+              <input v-model="addingTag" class="addTag" @mousedown.stop autofocus @keydown.enter="addTag(concept)">
+            </div>
+            <v-btn dense small icon @click="openQuery(concept)">
+              <v-icon>
+                mdi-information
+              </v-icon>
+            </v-btn>
+            <!--Al añadir file, puedes añadir, .txt, o .md. En el futuro, un .json de otra función o mapa! -->
+            <v-btn dense small icon @click="addFile(concept)">
+              <v-icon>
+                mdi-file
+              </v-icon>
+            </v-btn>
+            <v-btn dense small icon @click="addImage(concept)">
+              <v-icon>
+                mdi-image
+              </v-icon>
+            </v-btn>
+            <v-btn dense small icon @click="addLink(concept)" v-if="!addLinkFlag">
+              <v-icon>
+                mdi-link
+              </v-icon>
+            </v-btn>
+            <div v-else class="d-flex">
+              <v-btn @click="addLink(concept)" dense small icon>
+                <v-icon>
+                  mdi-close
+                </v-icon>
+              </v-btn>
+              <input v-model="addingLink.contents" style="border-color: white" @mousedown.stop autofocus @input="concept.data = 'link'">
+            </div>
+          </div>
+
+          <div class="text-center text-h6">
+            {{ concept.name }}
+          </div>
+        </v-card>
       </div>
       <div class="concept-info">
         <span v-for="category in concept.categories" :key="category">{{ getObjectById(category).name }}</span>
       </div>
-      <span class="node up" @mousedown.stop>
-        <span class="node-inner" @click="createRelation">
-        </span>
-      </span>
-      <span class="node down" @mousedown.stop>
-        <span class="node-inner" @click="createRelation">
-        </span>
-      </span>
-      <span class="node right" @mousedown.stop>
-        <span class="node-inner" @click="createRelation">
-        </span>
-      </span>
-      <span class="node left" @mousedown.stop>
+      <span class="node center" @mousedown.stop>
         <span class="node-inner" @click="createRelation">
         </span>
       </span>
@@ -103,7 +94,7 @@
           </v-icon>
         </v-btn>
       </div>
-      <input v-model="relation.name" @focus="focusItem(relation)">
+      <input v-model="relation.name" @focus="focusItem(relation)" :style="{ width : relation.name.length+'ch', transform: 'rotate('+ relationRotation(relation) +  'deg)'}">
       <div class="relation-info">
         <span v-for="category in relation.categories" :key="category.id">{{ category.name }}</span>
       </div>
@@ -450,6 +441,32 @@
       }
     },
 
+    computed : {
+      relationRotation() {
+        return (relation) => {
+          const obj1 = this.getObjectById(relation.subject);
+          const obj2 = this.getObjectById(relation.object);
+
+          const deltaX = obj2.x - obj1.x;
+          const deltaY = obj2.y - obj1.y;
+
+          const radians = Math.atan2(deltaY, deltaX);
+          let degrees = radians * (180 / Math.PI);
+
+          // Adjust the angle to be in the range of -180 to 180 degrees
+          if (degrees > 180) {
+            degrees -= 360;
+          } else if (degrees < -180) {
+            degrees += 360;
+          }
+
+          degrees = (degrees+360)%360
+
+          return degrees;
+        }
+
+      }
+    },
     created() {
       setTimeout(()=>{
         if (this.$refs.concept) {
@@ -457,10 +474,127 @@
             this.dragConcept(conceptElement)
           })
         }
-        else {
-          console.log(1)
-        }
       }, 500)
     }
   }
 </script>
+<style scoped>
+.concept-toolbar {
+  position: absolute;
+  top: -35px;
+  display: flex;
+  left: 50%;
+  gap: 0px;
+  transform: translateX(-50%);
+  justify-content: center;
+  align-items: center;
+}
+.relation-toolbar {
+  position: absolute;
+  top: -35px;
+  display: flex;
+  height: 20px;
+  left: 50%;
+  gap: 5px;
+  transform: translateX(-50%);
+}
+.concept-info {
+  position: absolute;
+  bottom: -20px;
+  display: flex;
+  height: 20px;
+  left: 50%;
+  gap: 5px;
+  transform: translateX(-50%);
+}
+.concept-info span {
+  border-radius: 3px;
+  border: 1px solid red;
+}
+.relation-info {
+  position: absolute;
+  bottom: -25px;
+  display: flex;
+  height: 20px;
+  left: 50%;
+  gap: 5px;
+  transform: translateX(-50%);
+}
+.relation-info span {
+  border-radius: 3px;
+  border: 1px solid red;
+}
+.addTag {
+  outline: none;
+  border-color: red !important;
+  border-radius: 5px;
+  min-width: 30px;
+  width: 60px;
+  height: 26px;
+  padding-left: 3px;
+  padding-right: 3px;
+  color: white;
+  background: #191919;
+}
+.concept {
+  position: absolute;
+  border-radius: 5px;
+  padding: 5px;
+  cursor: grab;
+  transform: translate(-50%, -50%);
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: var(--v-success-base);
+}
+.concept:active {
+  cursor: grab !important;
+}
+.concept:not(:active):hover .concept-inner {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.concept-inner {
+  position: absolute;
+  padding-top: 10px;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3px;
+  opacity: 0;
+  transition: opacity .3s;
+  overflow: visible;
+  pointer-events: none;
+}
+.concept input {
+  outline: none;
+  border: 1px solid var(--v-success-base);
+  border-radius: 5px;
+  min-width: 30px;
+  width: 60px;
+  padding-left: 3px;
+  padding-right: 3px;
+  color: white;
+  /*background: #191919;*/
+}
+.relation {
+  position: absolute;
+  min-width: 30px;
+  transform: translate(-50%, -50%);
+}
+.relation input {
+  outline: none;
+  border-radius: 5px;
+  min-width: 30px;
+  width: 60px;
+  padding-left: 3px;
+  padding-right: 3px;
+  color: var(--v-primary-base);
+  transform-origin: center;
+  background: #121212;
+}
+</style>

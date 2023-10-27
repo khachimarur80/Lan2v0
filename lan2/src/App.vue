@@ -12,6 +12,15 @@
         <v-btn @click="showing='board'" outlined color="error" class="ml-2 mr-2">
           Board
         </v-btn>
+        <!--<v-btn @click="showing='mermaid'" outlined color="pink lighten-1" class="ml-2 mr-2">
+          Mermaid
+        </v-btn>-->
+        <!--<v-btn @click="showing='table'" outlined color="amber" class="ml-2 mr-2">
+          Table
+        </v-btn>-->
+        <v-btn @click="showing='text'" outlined color="white" class="ml-2 mr-2">
+          Text
+        </v-btn>
         <v-btn @click="showing='query'" outlined color="success" class="ml-2 mr-2">
           Query
         </v-btn>
@@ -25,7 +34,7 @@
               </v-icon>
           </v-btn>
       </v-app-bar>
-      <v-navigation-drawer v-model="drawer" absolute left hide-overlay clipped app width="120">
+      <v-navigation-drawer v-model="drawer" absolute left hide-overlay clipped app width="240" persistent>
         <div style="width: 100%; height: 60px;"></div>
         <v-list v-if="showing=='board'" class="d-flex align-center flex-column">
           <v-list-item>
@@ -49,6 +58,55 @@
           </v-list-item>
         </v-list>
         <v-list v-if="showing=='query'" class="d-flex align-center flex-column">
+          <v-combobox
+            :items="categories"
+            item-value="id"
+            item-text="name"
+            label="Tags"
+            chips
+            multiple
+            outlined
+            dense
+            class="mt-3">
+          </v-combobox>
+          <div class="d-flex align-center justify-center mt-n3">
+            <v-btn icon @click="setObjectType(0)" tile :outlined="objectType === 0" color="red">
+              <v-icon>mdi-pound</v-icon>
+            </v-btn>
+
+            <v-btn icon @click="setObjectType(1)" :outlined="objectType === 1" color="green" tile>
+              <v-icon>mdi-code-brackets</v-icon>
+            </v-btn>
+
+            <v-btn icon @click="setObjectType(2)" :outlined="objectType === 2" tile color="blue">
+              <v-icon>mdi-transit-connection-horizontal</v-icon>
+            </v-btn>
+
+            <v-btn icon @click="setObjectType(3)" :outlined="objectType === 3" tile color="yellow">
+              <v-icon>mdi-code-tags</v-icon>
+            </v-btn>
+
+            <v-btn icon @click="setObjectType(4)" :outlined="objectType === 4" tile color="purple">
+              <v-icon>mdi-source-fork</v-icon>
+            </v-btn>
+
+            <v-btn icon @click="setObjectType(5)" :outlined="objectType === 5" tile color="orange">
+              <v-icon>mdi-skew-more</v-icon>
+            </v-btn>
+          </div>
+          <div class="d-flex align-center justify-center mt-3" v-if="objectType==1">
+            <v-btn icon @click="setContentType(0)" tile :outlined="contentType === 0">
+              <v-icon>mdi-file</v-icon>
+            </v-btn>
+
+            <v-btn icon @click="setContentType(1)" :outlined="contentType === 1" tile>
+              <v-icon>mdi-image</v-icon>
+            </v-btn>
+
+            <v-btn icon @click="setContentType(2)" :outlined="contentType === 2" tile>
+              <v-icon>mdi-link</v-icon>
+            </v-btn>
+          </div>
         </v-list>
         <v-list v-if="showing=='functions'" class="d-flex align-center flex-column">
           <v-list-item>
@@ -95,14 +153,39 @@
         </v-list>
       </v-navigation-drawer>
       <v-main>
-        <div id="contents" v-if="loaded">
+        <div id="contents" v-if="loaded"  @wheel="zoomBoard">
           <BoardView 
             v-if="showing=='board'" 
             :concepts="concepts"
             :relations="relations"
             :categories="categories"
             :selectingArea="selectingArea"
-            />
+          />
+          <MermaidView 
+            v-if="showing=='mermaid'"
+            :concepts="concepts"
+            :relations="relations"
+            :categories="categories"
+            :statements="statements"
+            :actions="actions"
+            :conditions="conditions"
+          />
+          <TableView 
+            v-if="showing=='table'"
+            :concepts="concepts"
+            :relations="relations"
+            :categories="categories"
+            :statements="statements"
+            :actions="actions"
+            :conditions="conditions"
+          />
+          <TextView 
+            v-if="showing=='text'"
+            :concepts="concepts"
+            :relations="relations"
+            :categories="categories"
+            :contents="contents"
+          />
           <QueryView 
             v-if="showing=='query'"
             :concepts="concepts"
@@ -111,6 +194,8 @@
             :statements="statements"
             :actions="actions"
             :conditions="conditions"
+            :objectType="objectType"
+            :contentType="contentType"
           />
           <FunctionsView 
             v-if="showing=='functions'"
@@ -130,8 +215,55 @@
 import BoardView from './components/BoardView';
 import QueryView from './components/QueryView';
 import FunctionsView from './components/FunctionsView';
+import MermaidView from './components/MermaidView';
+import TableView from './components/TableView';
+import TextView from './components/TextView';
 
 import EventBus from './event-bus.js';
+
+class Category {
+  constructor(name) {
+    this.objectType = 'category'
+    this.name = name
+    this.id = Math.floor(Math.random()*100000)
+    this.objects = []
+  }
+}
+
+class Concept {
+  constructor() {
+    this.objectType = 'concept'
+    this.name = ''
+    this.id = Math.floor(Math.random()*100000)
+    this.data = 'file'
+    this.contents = null
+
+    //Board values
+    this.x = 0
+    this.y = 0
+
+    //Attributes for easier parsing
+    this.relations = []
+    this.categories = []
+  }
+}
+
+class Relation {
+  constructor() {
+    this.objectType = 'relation'
+    this.name = ''
+    this.id = Math.floor(Math.random()*100000)
+    this.subject = null
+    this.object = null
+    this.offsetX1 = 0
+    this.offsetX2 = 0
+    this.offsetY1 = 0
+    this.offsetY2 = 0
+
+    //Attributes for easier parsing
+    this.categories = []
+  }
+}
 
 class Action {
   constructor() {
@@ -192,6 +324,9 @@ export default {
     BoardView,
     QueryView,
     FunctionsView,
+    MermaidView,
+    TableView,
+    TextView,
   },
 
   data: () => ({
@@ -205,8 +340,37 @@ export default {
     selectingArea: false,
     drawer: false,
     loaded: false,
+    contents: [],
+    zoomVal: 1,
+    objectType: null,
+    contentType: null,
   }),
   methods: {
+    setContentType(index) {
+      if (this.contentType!=index) {
+        this.contentType = index;
+      }
+      else {
+        this.contentType = null
+      }
+      EventBus.$emit('setQuery', [])
+    },
+    setObjectType(index) {
+      if (this.objectType!=index) {
+        this.objectType = index;
+      }
+      else {
+        this.objectType = null
+      }
+      EventBus.$emit('setQuery', [])
+    },
+    zoomBoard(event) {
+      if (this.showing=='board') {
+        this.zoomVal += event.deltaY*0.0001
+        this.zoomVal = Math.max(Math.min(10, this.zoomVal), .1)
+        document.getElementById('board').style.transform = `scale(${this.zoomVal})`
+      }
+    },
     createStatement(type) {
       let statement = new Statement(type)
       statement.x = Math.floor(Math.random()*100) + 150
@@ -292,6 +456,9 @@ export default {
         'statements' : this.statements,
         'conditions' : this.conditions,
         'actions' : this.actions,
+        'contents' : this.contents,
+        'objectType' : this.objectType,
+        'contentType' : this.contentType,
       }
       window.electronAPI.saveData(data)
     },
@@ -339,7 +506,70 @@ export default {
         this.concepts = this.concepts.filter(concept => concept.id !== item.id);
       }
     },
+    updateContents(contents) {
+      this.contents = contents
+      this.saveData()
+    },
+    createObject(name, object, content) {
+      if (object==0) {
+        let category = new Category()
+        category.name = name
+        this.categories.push(category)
 
+        EventBus.$emit('setQuery', category)
+      }
+      else if (object==1) {
+        if (content==1) {
+          let concept = new Concept()
+          concept.name = name
+          this.concepts.push(concept)
+
+          EventBus.$emit('setQuery', concept)
+        }
+        else if (content==2) {
+          let concept = new Concept()
+          concept.name = name
+          this.concepts.push(concept)
+
+          EventBus.$emit('setQuery', concept)
+        }
+        else {
+          let concept = new Concept()
+          concept.name = name
+          this.concepts.push(concept)
+
+          EventBus.$emit('setQuery', concept)
+        }
+      }
+      else if (object==2) {
+        let relation = new Relation()
+        relation.name = name
+        this.relations.push(relation)
+
+        EventBus.$emit('setQuery', relation)
+      }
+      else if (object==3) {
+        let statement = new Statement()
+        statement.name = name
+        this.statements.push(statement)
+
+        EventBus.$emit('setQuery', statement)
+      }
+      else if (object==4) {
+        let condition = new Condition()
+        condition.name = name
+        this.conditions.push(condition)
+
+        EventBus.$emit('setQuery', condition)
+      }
+      else if (object==5) {
+        let action = new Action ()
+        action.name = name
+        this.actions.push(action)
+
+        EventBus.$emit('setQuery', action)
+      }
+    }
   },
   watch: {
     showing: 'saveData',
@@ -348,7 +578,9 @@ export default {
     categories: 'saveData',
     statements: 'saveData',
     conditions: 'saveData',
-    actions: 'saveData'
+    actions: 'saveData',
+    objectType: 'saveData',
+    contentType: 'saveData',
   },
   async created() {
     const message = await new Promise(resolve => {
@@ -363,6 +595,9 @@ export default {
     this.statements = message.statements || [];
     this.conditions = message.conditions || [];
     this.actions = message.actions || [];
+    this.contents = message.contents || [];
+    this.contentType = message.contentType;
+    this.objectType = message.objectType;
 
     this.loaded = true;
 
@@ -376,6 +611,10 @@ export default {
 
     //QueryView Events
     EventBus.$on('deleteItem', this.deleteItem)
+    EventBus.$on('createObject', this.createObject)
+
+    //TextView Events
+    EventBus.$on('updateContents', this.updateContents)
   }
 };
 </script>
@@ -384,12 +623,17 @@ export default {
   ::-webkit-scrollbar {
     display: none;
   }
+  line {
+    stroke-width: 3px !important;
+    stroke: var(--v-primary-base);
+  }
   #contents {
     display: flex;
     height: calc(100vh - 64px);
     width: 100h;
     flex-direction: column;
     align-items: center;
+    overflow: hidden;
   }
   #board {
     flex: 1;
@@ -397,9 +641,9 @@ export default {
     cursor: crosshair;
     position: relative;
     width: 100%;
-    background-size: 3em 3em;
-      background-image: radial-gradient(circle, red 1px, rgba(0, 0, 0, 0) 1px);
-      background-repeat: repeat;
+    top: 50%;
+    left: 50%;
+    transform-origin: top left;
   }
   #functions {
     flex: 1;
@@ -407,106 +651,6 @@ export default {
     cursor: crosshair;
     position: relative;
     width: 100%;
-    background-size: 3em 3em;
-      background-image: radial-gradient(circle, blue 1px, rgba(0, 0, 0, 0) 1px);
-      background-repeat: repeat;
-  }
-  .concept-toolbar {
-    position: absolute;
-    top: -35px;
-    display: flex;
-    left: 50%;
-    gap: 0px;
-    transform: translateX(-50%);
-    justify-content: center;
-    align-items: center;
-  }
-  .relation-toolbar {
-    position: absolute;
-    top: -35px;
-    display: flex;
-    height: 20px;
-    left: 50%;
-    gap: 5px;
-    transform: translateX(-50%);
-  }
-  .concept-info {
-    position: absolute;
-    bottom: -20px;
-    display: flex;
-    height: 20px;
-    left: 50%;
-    gap: 5px;
-    transform: translateX(-50%);
-  }
-  .concept-info span {
-    border-radius: 3px;
-    border: 1px solid red;
-  }
-  .relation-info {
-    position: absolute;
-    bottom: -25px;
-    display: flex;
-    height: 20px;
-    left: 50%;
-    gap: 5px;
-    transform: translateX(-50%);
-  }
-  .relation-info span {
-    border-radius: 3px;
-    border: 1px solid red;
-  }
-  .addTag {
-    outline: none;
-    border-color: red !important;
-    border-radius: 5px;
-    min-width: 30px;
-    width: 60px;
-    height: 26px;
-    padding-left: 3px;
-    padding-right: 3px;
-    color: white;
-    background: #191919;
-  }
-  .concept {
-    position: absolute;
-    border-radius: 5px;
-    padding: 5px;
-    cursor: grab;
-    transform: translate(-50%, -50%);
-  }
-  .concept-inner {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 3px;
-  }
-  .concept input {
-    outline: none;
-    border: 1px solid green;
-    border-radius: 5px;
-    min-width: 30px;
-    width: 60px;
-    padding-left: 3px;
-    padding-right: 3px;
-    color: white;
-    /*background: #191919;*/
-  }
-  .relation {
-    position: absolute;
-    min-width: 30px;
-    transform: translate(-50%, -50%);
-  }
-  .relation input {
-    outline: none;
-    border: 1px solid blue;
-    border-radius: 5px;
-    min-width: 30px;
-    width: 60px;
-    padding-left: 3px;
-    padding-right: 3px;
-    color: white;
-    background: #191919;
   }
   .condition {
     position: absolute;
@@ -608,9 +752,13 @@ export default {
     border-radius: 50%;
     position: absolute;
     display: flex;
-    transform: translate(-50%, -50%);
     justify-content: center;
     align-items: center;
+  }
+  .node.center {
+    top: 50%;
+    right: 50%;
+    transform: translate(50%, -50%);
   }
   .node.left {
     top: 50%;
@@ -692,6 +840,7 @@ export default {
     position: absolute;
     top: 0px;
     left: 0px;
+    overflow: visible;
   }
   #generalFunctionsSVG {
     position: absolute;
@@ -705,13 +854,13 @@ export default {
   }
 
   .statement-concept {
-    border: 1px solid green !important;
+    border: 1px solid var(--v-success-base) !important;
   }
   .statement-tag {
-    border: 1px solid red !important;
+    border: 1px solid var(--v-error-base) !important;
   }
   .statement-relation {
-    border: 1px solid blue !important;
+    border: 1px solid var(--v-primary-base) !important;
   }
   table {
     border-collapse: collapse;
@@ -732,5 +881,12 @@ export default {
   .false {
     box-shadow: 0px 0px 5px 2px hsl(0, 100%, 50%);
   }
-
+  .inline-concept {
+    color: var(--v-success-base);
+    cursor: pointer;
+  }
+  .highlight-concept {
+    text-decoration-color: var(--v-primary-base) !important;
+    text-decoration : underline;
+  }
 </style>

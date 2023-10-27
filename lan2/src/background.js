@@ -22,7 +22,6 @@ async function createWindow() {
     frame: false,
     roundedCorners: false,
     hasShadow: false,
-    backgroundColor: '#121212',
     webPreferences: {
       preload: preloadFilePath,
       nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
@@ -68,7 +67,7 @@ app.on('ready', async () => {
     const filePath = path.join(__dirname, '../src/assets', 'data.json');
     fs.writeFile(filePath, JSON.stringify(data), ()=>{});
   });
-  ipcMain.on('get-data', (event, data) => {
+  ipcMain.on('get-data', () => {
     const filePath = path.join(__dirname, '../src/assets', 'data.json');
     fs.readFile(filePath, 'utf-8', (err, data) => {
       const message = JSON.parse(data);

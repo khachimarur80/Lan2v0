@@ -39,15 +39,14 @@ By clicking you add concepts (green). You can click the nodes appearning on the 
 
 ## Unit tests
 
-### Test 1
+### Explaining Merge Sort Algorithm
 
-Mass **affect** gravity
+1. Identify the items that are involved in the algorithmic process.
 
-Distance **affect** gravity
-
-**Universal** law of gravitation.
-
-Gravity **is inversely proportional to** the square of the distance
-
-**Fundamental** principle of classical mechanics.
+	- Unsorted list 
+	- Slice
+	- Unit
+	- Merge
+	- Sorted list
+	- Split
 
