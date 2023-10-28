@@ -332,6 +332,9 @@
           relation.object = this.creatingRelation[0][0].id
           relation.subject = this.creatingRelation[1][0].id
 
+          this.creatingRelation[0][0].relations.push(relation.id)
+          this.creatingRelation[1][0].relations.push(relation.id)
+          
           relation.offsetX1 = - this.creatingRelation[0][0].x + this.creatingRelation[0][1].x + this.creatingRelation[0][1].width/2
           relation.offsetY1 = - this.creatingRelation[0][0].y + this.creatingRelation[0][1].y - 56 + this.creatingRelation[0][1].height/2
           relation.offsetX2 = - this.creatingRelation[1][0].x + this.creatingRelation[1][1].x + this.creatingRelation[1][1].width/2

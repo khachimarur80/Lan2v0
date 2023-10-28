@@ -838,8 +838,8 @@ export default {
   }
   #generalSVG {
     position: absolute;
-    top: 0px;
-    left: 0px;
+    top: -50%;
+    left: -50%;
     overflow: visible;
   }
   #generalFunctionsSVG {

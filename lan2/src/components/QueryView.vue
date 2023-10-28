@@ -19,7 +19,7 @@
               label="Search for object"
               outlined
               item-text="name"
-              @input="selectItem">
+              @change="selectItem">
               <template v-slot:item="{ item }">
                 <div color="red">{{ item.name }}</div>
               </template>
@@ -239,7 +239,7 @@
             <div class="d-flex align-center">
               <v-text-field v-model="selectedQuery.contents"></v-text-field>
             </div>
-            <div class="iframe-container">
+            <div class="iframe-container" v-if="typeof selectedQuery.contents == 'string'">
               <iframe
                 :src="selectedQuery.contents"
                 width="100%"
@@ -248,9 +248,16 @@
               ></iframe>
             </div>
           </div>
-          <div class="text-body-1" v-if="selectedQuery.data=='file'">
-            <div class="text-h5">Contents</div><br>
-            <div class="markdown" v-html="compiledMarkdown(selectedQuery.contents)"></div><br>
+          <div v-if="selectedQuery.data=='file'" style="height: calc(100%);">
+            <TextEditor
+              :concepts="concepts"
+              :relations="relations"
+              :categories="categories"
+              :contents="selectedQuery.contents"
+              @addItem="addItem"
+              @updateContents="updateContents"
+            >
+            </TextEditor>
           </div>
           <div v-if="selectedQuery.data=='image'">
             <div class="text-h5">Contents</div><br>
@@ -260,12 +267,12 @@
                   mdi-image
                 </v-icon>
               </v-btn>
-              <span class="text-body-1" v-if="selectedQuery.contents">
+              <span class="text-body-1" v-if="typeof selectedQuery.contents == 'string'">
                 {{ selectedQuery.contents.split('/').slice(-1)[0] }}
               </span>
             </div>
             <v-divider class="mb-4 mt-2"></v-divider>
-            <div v-if="selectedQuery.contents" >
+            <div v-if="typeof selectedQuery.contents == 'string'" >
               <v-dialog v-model="fullImage" fullscreen hide-overlay>
                 <template v-slot:activator="{ on, attrs }">
                   <v-img v-bind="attrs" v-on="on" @click="fullImage=true" :src="'safe-protocol://' + selectedQuery.contents"></v-img>
@@ -286,6 +293,7 @@
   import EventBus from '@/event-bus'
   import colors from 'vuetify/lib/util/colors';
   import { marked } from 'marked';
+  import TextEditor from './TextEditor';
 
   export default {
     name: 'QueryView',
@@ -301,6 +309,10 @@
       fullImage: false,
       newCreation: '',
     }),
+
+    components: {
+      TextEditor
+    },
 
     props: {
       concepts: {
@@ -330,8 +342,14 @@
     },
 
     methods: {
+      addItem(concept) {
+        EventBus.$emit('addItem', concept)
+      },
+      updateContents(contents) {
+        EventBus.$emit('updateContents', contents)
+      },
       changeDataType() {
-        this.selectedQuery.contents = null
+        this.selectedQuery.contents = []
         this.saveData()
       },
       async setConceptImage() {
@@ -412,6 +430,7 @@
 
       selectItem() {
         this.selectedQuery = this.getObjectById(this.select)
+        console.log(1)
         this.select = null
       },
       setQuery(object) {
