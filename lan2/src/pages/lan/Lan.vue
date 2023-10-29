@@ -212,14 +212,14 @@
 </template>
 
 <script>
-import BoardView from './components/BoardView';
-import QueryView from './components/QueryView';
-import FunctionsView from './components/FunctionsView';
-import MermaidView from './components/MermaidView';
-import TableView from './components/TableView';
-import TextView from './components/TextView';
+import BoardView from './../../components/BoardView';
+import QueryView from './../../components/QueryView';
+import FunctionsView from './../../components/FunctionsView';
+import MermaidView from './../../components/MermaidView';
+import TableView from './../../components/TableView';
+import TextView from './../../components/TextView';
 
-import EventBus from './event-bus.js';
+import EventBus from './../../event-bus.js';
 
 class Category {
   constructor(name) {
@@ -366,7 +366,7 @@ export default {
     },
     zoomBoard(event) {
       if (this.showing=='board') {
-        this.zoomVal += event.deltaY*0.0001
+        this.zoomVal += event.deltaY*0.0005
         this.zoomVal = Math.max(Math.min(10, this.zoomVal), .1)
         document.getElementById('board').style.transform = `scale(${this.zoomVal})`
       }

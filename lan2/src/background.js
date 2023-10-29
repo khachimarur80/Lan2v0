@@ -13,40 +13,35 @@ protocol.registerSchemesAsPrivileged([
 
 let win
 
-async function createWindow() {
-  const preloadFilePath = path.join(__dirname, '../src', 'preload.js')
-
-  win = new BrowserWindow({
-    width: 800,
-    height: 600,
+function createWindow(devPath) {
+  let win = new BrowserWindow({
+    width: 700,
+    height: 700,
+    backgroundColor: '#262626',
+    titleBarStyle: 'hidden',
+    trafficLightPosition: { x: 11, y: 12 },
     frame: false,
-    roundedCorners: false,
     hasShadow: false,
+    resizable: false,
     webPreferences: {
-      preload: preloadFilePath,
       nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
-      contextIsolation: !process.env.ELECTRON_NODE_INTEGRATION
+      preload: path.join(__dirname, '../src/preload.js')
     }
   })
-
+  win.setMaximizable(false);
   if (process.env.WEBPACK_DEV_SERVER_URL) {
-    await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
-    if (!process.env.IS_TEST) win.webContents.openDevTools()
-  } else {
+    win.loadURL(process.env.WEBPACK_DEV_SERVER_URL + devPath)
+  }
+  else {
     createProtocol('app')
     win.loadURL('app://./index.html')
   }
+
+  return win
 }
 
-// Quit when all windows are closed.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  if (BrowserWindow.getAllWindows().length === 0) createWindow('home.html')
 })
 
 app.on('ready', async () => {
@@ -62,7 +57,7 @@ app.on('ready', async () => {
       console.error('Vue Devtools failed to install:', e.toString())
     }
   }
-  createWindow()
+  createWindow('home.html')
   ipcMain.on('save-data', (event, data) => {
     const filePath = path.join(__dirname, '../src/assets', 'data.json');
     fs.writeFile(filePath, JSON.stringify(data), ()=>{});
