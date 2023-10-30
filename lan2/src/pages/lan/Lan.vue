@@ -1,225 +1,129 @@
 <template>
-  <v-app>
-      <v-app-bar outlined app clipped-left style="-webkit-app-region: drag;" elevation="0">
-        <v-app-bar-nav-icon>
-            <v-btn icon @click.stop="drawer = !drawer">
-                <v-icon>
-                    mdi-menu
-                </v-icon>
-            </v-btn>
-        </v-app-bar-nav-icon>
-        <v-spacer></v-spacer>
-        <v-btn @click="showing='board'" outlined color="error" class="ml-2 mr-2">
-          Board
-        </v-btn>
-        <!--<v-btn @click="showing='mermaid'" outlined color="pink lighten-1" class="ml-2 mr-2">
-          Mermaid
-        </v-btn>-->
-        <!--<v-btn @click="showing='table'" outlined color="amber" class="ml-2 mr-2">
-          Table
-        </v-btn>-->
-        <v-btn @click="showing='text'" outlined color="white" class="ml-2 mr-2">
-          Text
-        </v-btn>
-        <v-btn @click="showing='query'" outlined color="success" class="ml-2 mr-2">
-          Query
-        </v-btn>
-        <v-btn @click="showing='functions'" outlined color="primary" class="ml-2 mr-2">
-          Function
-        </v-btn>
-        <v-spacer></v-spacer>
-        <v-btn icon @click.stop="drawer = !drawer">
+  <v-app v-if="lan">
+    <div id="titlebar" class="text-overline">
+      <span>{{ lan.name }}</span><span class="mini-hr mx-1"></span> <span style="color: var(--v-error-base);">lan2</span>
+    </div>
+    <v-main>
+      <div id="main">
+        <div id="leftsidebar">
+          <div class="subtitle-2 px-2 py-2">
+            Carpetas
+          </div>
+          <div id="treeview" class="mx-1">
+            <TreeView :items="folderStructure" :vault="lan.name" v-if="folderStructure"></TreeView>
+          </div>
+        </div>
+        <div id="contents" @wheel="zoomBoard">
+          <div class="d-flex align-center justify-center py-1">
+            <v-btn icon dense small class="mx-2" :color="lan.showing=='board' ? 'error' : ''" @click="setShowing('board')">
               <v-icon>
-                  mdi-cog-outline
-              </v-icon>
-          </v-btn>
-      </v-app-bar>
-      <v-navigation-drawer v-model="drawer" absolute left hide-overlay clipped app width="240" persistent>
-        <div style="width: 100%; height: 60px;"></div>
-        <v-list v-if="showing=='board'" class="d-flex align-center flex-column">
-          <v-list-item>
-            <v-btn @click="selectingArea=true" width="100" v-if="!selectingArea">
-              <v-icon>
-                mdi-select
+                mdi-source-fork
               </v-icon>
             </v-btn>
-            <v-btn @click="selectingArea=false" width="100" v-else>
+            <v-btn icon dense small class="mx-2" :color="lan.showing=='text' ? 'error' : ''" @click="setShowing('text')">
               <v-icon>
-                mdi-hand-back-right-outline
+                mdi-text-recognition
               </v-icon>
             </v-btn>
-          </v-list-item>
-          <v-list-item>
-            <v-btn width="100">
+            <v-btn icon dense small class="mx-2" :color="lan.showing=='function' ? 'error' : ''" @click="setShowing('function')">
               <v-icon>
-                mdi-arrange-send-to-back
+                mdi-function-variant
               </v-icon>
             </v-btn>
-          </v-list-item>
-        </v-list>
-        <v-list v-if="showing=='query'" class="d-flex align-center flex-column">
-          <v-combobox
-            :items="categories"
-            item-value="id"
-            item-text="name"
-            label="Tags"
-            chips
-            multiple
-            outlined
-            dense
-            class="mt-3">
-          </v-combobox>
-          <div class="d-flex align-center justify-center mt-n3">
-            <v-btn icon @click="setObjectType(0)" tile :outlined="objectType === 0" color="red">
-              <v-icon>mdi-pound</v-icon>
+            <v-btn icon dense small class="mx-2" :color="lan.showing=='table' ? 'error' : ''" @click="setShowing('table')">
+              <v-icon>
+                mdi-table
+              </v-icon>
             </v-btn>
-
-            <v-btn icon @click="setObjectType(1)" :outlined="objectType === 1" color="green" tile>
-              <v-icon>mdi-code-brackets</v-icon>
-            </v-btn>
-
-            <v-btn icon @click="setObjectType(2)" :outlined="objectType === 2" tile color="blue">
-              <v-icon>mdi-transit-connection-horizontal</v-icon>
-            </v-btn>
-
-            <v-btn icon @click="setObjectType(3)" :outlined="objectType === 3" tile color="yellow">
-              <v-icon>mdi-code-tags</v-icon>
-            </v-btn>
-
-            <v-btn icon @click="setObjectType(4)" :outlined="objectType === 4" tile color="purple">
-              <v-icon>mdi-source-fork</v-icon>
-            </v-btn>
-
-            <v-btn icon @click="setObjectType(5)" :outlined="objectType === 5" tile color="orange">
-              <v-icon>mdi-skew-more</v-icon>
+            <v-btn icon dense small class="mx-2" :color="lan.showing=='query' ? 'error' : ''" @click="setShowing('query')">
+              <v-icon>
+                mdi-database-search
+              </v-icon>
             </v-btn>
           </div>
-          <div class="d-flex align-center justify-center mt-3" v-if="objectType==1">
-            <v-btn icon @click="setContentType(0)" tile :outlined="contentType === 0">
-              <v-icon>mdi-file</v-icon>
-            </v-btn>
-
-            <v-btn icon @click="setContentType(1)" :outlined="contentType === 1" tile>
-              <v-icon>mdi-image</v-icon>
-            </v-btn>
-
-            <v-btn icon @click="setContentType(2)" :outlined="contentType === 2" tile>
-              <v-icon>mdi-link</v-icon>
-            </v-btn>
-          </div>
-        </v-list>
-        <v-list v-if="showing=='functions'" class="d-flex align-center flex-column">
-          <v-list-item>
-            <v-btn @click="addAction" width="100" outlined color="orange">
-              Action
-            </v-btn>
-          </v-list-item>
-          <v-list-item>
-            <v-btn @click="addClause" width="100" outlined color="purple">
-              Clause
-            </v-btn>
-          </v-list-item>
-          <v-list-item>
-            <v-btn @click="createStatement('[]')" width="100" outlined color="yellow">
-              <v-icon color="success">mdi-code-brackets</v-icon>
-            </v-btn>
-          </v-list-item>
-          <v-list-item>
-            <v-btn @click="createStatement('#')" width="100" outlined color="yellow">
-              <v-icon color="error">mdi-pound</v-icon>
-            </v-btn>
-          </v-list-item>
-          <v-list-item>
-            <v-btn @click="createStatement('[]--[]')" width="100" outlined color="yellow">
-              <v-icon color="success">mdi-code-brackets</v-icon>
-              <v-icon color="primary">mdi-transit-connection-horizontal</v-icon>
-              <v-icon color="success">mdi-code-brackets</v-icon>
-            </v-btn>
-          </v-list-item>
-          <v-list-item>
-            <v-btn @click="createStatement('#--[]')" width="100" outlined color="yellow">
-              <v-icon color="error">mdi-pound</v-icon>
-              <v-icon color="primary">mdi-transit-connection-horizontal</v-icon>
-              <v-icon color="success">mdi-code-brackets</v-icon>
-            </v-btn>
-          </v-list-item>
-          <v-list-item>
-            <v-btn @click="createStatement('#--#')" width="100" outlined color="yellow">
-              <v-icon color="error">mdi-pound</v-icon>
-              <v-icon color="primary">mdi-transit-connection-horizontal</v-icon>
-              <v-icon color="error">mdi-pound</v-icon>
-            </v-btn>
-          </v-list-item>
-        </v-list>
-      </v-navigation-drawer>
-      <v-main>
-        <div id="contents" v-if="loaded"  @wheel="zoomBoard">
           <BoardView 
-            v-if="showing=='board'" 
-            :concepts="concepts"
-            :relations="relations"
-            :categories="categories"
-            :selectingArea="selectingArea"
-          />
-          <MermaidView 
-            v-if="showing=='mermaid'"
-            :concepts="concepts"
-            :relations="relations"
-            :categories="categories"
-            :statements="statements"
-            :actions="actions"
-            :conditions="conditions"
+            v-if="lan.showing=='board'" 
+            :concepts="lan.concepts"
+            :relations="lan.relations"
+            :categories="lan.categories"
+            :selectingArea="lan.selectingArea"
           />
           <TableView 
-            v-if="showing=='table'"
-            :concepts="concepts"
-            :relations="relations"
-            :categories="categories"
-            :statements="statements"
-            :actions="actions"
-            :conditions="conditions"
+            v-if="lan.showing=='table'"
+            :concepts="lan.concepts"
+            :relations="lan.relations"
+            :categories="lan.categories"
+            :statements="lan.statements"
+            :actions="lan.actions"
+            :conditions="lan.conditions"
           />
           <TextView 
-            v-if="showing=='text'"
-            :concepts="concepts"
-            :relations="relations"
-            :categories="categories"
-            :contents="contents"
+            v-if="lan.showing=='text'"
+            :concepts="lan.concepts"
+            :relations="lan.relations"
+            :categories="lan.categories"
+            :contents="lan.contents"
           />
           <QueryView 
-            v-if="showing=='query'"
-            :concepts="concepts"
-            :relations="relations"
-            :categories="categories"
-            :statements="statements"
-            :actions="actions"
-            :conditions="conditions"
-            :objectType="objectType"
-            :contentType="contentType"
+            v-if="lan.showing=='query'"
+            :concepts="lan.concepts"
+            :relations="lan.relations"
+            :categories="lan.categories"
+            :statements="lan.statements"
+            :actions="lan.actions"
+            :conditions="lan.conditions"
+            :objectType="lan.objectType"
+            :contentType="lan.contentType"
           />
           <FunctionsView 
-            v-if="showing=='functions'"
-            :concepts="concepts"
-            :relations="relations"
-            :categories="categories"
-            :statements="statements"
-            :actions="actions"
-            :conditions="conditions"
+          v-if="lan.showing=='functions'"
+          :concepts="lan.concepts"
+          :relations="lan.relations"
+          :categories="lan.categories"
+          :statements="lan.statements"
+          :actions="lan.actions"
+          :conditions="lan.conditions"
           />
         </div>
-      </v-main>
+        <div id="rightsidebar">
+        </div>
+      </div>
+    </v-main>
   </v-app>
 </template>
 
 <script>
+
+import TreeView from './../../components/TreeView';
 import BoardView from './../../components/BoardView';
 import QueryView from './../../components/QueryView';
 import FunctionsView from './../../components/FunctionsView';
-import MermaidView from './../../components/MermaidView';
 import TableView from './../../components/TableView';
 import TextView from './../../components/TextView';
 
+
 import EventBus from './../../event-bus.js';
+
+class Lan {
+  constructor(name, location) {
+    this.name = name
+    this.location = location
+    this.showing =  'board'
+    this.concepts =  []
+    this.relations =  []
+    this.categories =  []
+    this.statements = []
+    this.conditions =  []
+    this.actions =  []
+    this.selectingArea =  false
+    this.drawer =  false
+    this.loaded =  false
+    this.contents =  []
+    this.zoomVal =  1
+    this.objectType =  null
+    this.contentType =  null
+  }
+}
 
 class Category {
   constructor(name) {
@@ -301,21 +205,21 @@ class Condition {
 }
 
 class Statement {
-    constructor(type) {
-      this.objectType = 'statement'
-      this.id = Math.floor(Math.random()*100000)
-      this.name = '#'+this.id.toString()
-      this.type = type
-      this.items = []
+  constructor(type) {
+    this.objectType = 'statement'
+    this.id = Math.floor(Math.random()*100000)
+    this.name = '#'+this.id.toString()
+    this.type = type
+    this.items = []
 
-      //Board values
-      this.x = 100
-      this.y = 100
+    //Board values
+    this.x = 100
+    this.y = 100
 
-      this.offsetX = 0
-      this.offsetY = 0
-    }
+    this.offsetX = 0
+    this.offsetY = 0
   }
+}
 
 export default {
   name: 'App',
@@ -324,34 +228,72 @@ export default {
     BoardView,
     QueryView,
     FunctionsView,
-    MermaidView,
     TableView,
     TextView,
+    TreeView,
   },
 
   data: () => ({
-    showing: 'board',
-    concepts: [],
-    relations: [],
-    categories: [],
-    statements: [],
-    conditions: [],
-    actions: [],
-    selectingArea: false,
-    drawer: false,
-    loaded: false,
-    contents: [],
-    zoomVal: 1,
-    objectType: null,
-    contentType: null,
+    //Left Sidebar Variables
+    folderStructure: null,
+
+    lan: null,
   }),
   methods: {
-    setContentType(index) {
-      if (this.contentType!=index) {
-        this.contentType = index;
+    async updateFolderStructure() {
+      const folderStructure = await new Promise(resolve => {
+        window.electronAPI.getFolderStructure()
+        window.electronAPI.response('get-folder-structure-response', resolve)
+      })
+
+      this.folderStructure = folderStructure
+    },
+
+    //Left Sidebar Methods
+    // ------------------------------------------ TREEVIEW ------------------------------------------- //
+        
+    //Open a directory
+    openNode(node) {
+        node.open = !node.open
+    },
+    //Save new name for a node
+    saveFileNode(node, new_name) {
+        var short_name = new_name.split('/').splice(-1)[0].split('.').slice(0,-1).join(".")
+        if (this.file==node.id) {
+            this.file = new_name
+        }
+        for (let i=0; i<this.files.length; i++) {
+            if (this.files[i][0]==node.id) {
+                this.files[i] = [new_name, short_name]
+            }
+        }
+    },
+    //Change location of a node
+    moveFile(origin, destiny) {
+        window.electronAPI.moveFileRequest(origin, destiny)
+        setTimeout(()=>{this.updateFolderStructure()}, 100)
+    },
+
+    openFile(file) {
+      console.log(file)
+    },
+
+    setShowing(showing) {
+      if (this.lan.showing==showing) {
+        this.lan.showing = ''
       }
       else {
-        this.contentType = null
+        this.lan.showing = showing
+      }
+      this.saveData()
+    },
+
+    setContentType(index) {
+      if (this.lan.contentType!=index) {
+        this.lan.contentType = index;
+      }
+      else {
+        this.lan.contentType = null
       }
       EventBus.$emit('setQuery', [])
     },
@@ -365,9 +307,9 @@ export default {
       EventBus.$emit('setQuery', [])
     },
     zoomBoard(event) {
-      if (this.showing=='board') {
-        this.zoomVal += event.deltaY*0.0005
-        this.zoomVal = Math.max(Math.min(10, this.zoomVal), .1)
+      if (this.lan.showing=='board') {
+        this.lan.zoomVal += event.deltaY*0.0005
+        this.lan.zoomVal = Math.max(Math.min(10, this.zoomVal), .1)
         document.getElementById('board').style.transform = `scale(${this.zoomVal})`
       }
     },
@@ -442,44 +384,33 @@ export default {
       EventBus.$emit('updateConditionsDrag')
     },
     openQuery(object) {
-      this.showing = 'query'
+      this.lan.showing = 'query'
       this.$nextTick(() => {
         EventBus.$emit('setQuery', object)
       })
     },
     saveData() {
-      const data = {
-        'showing' : this.showing,
-        'concepts' : this.concepts,
-        'relations' : this.relations,
-        'categories' : this.categories,
-        'statements' : this.statements,
-        'conditions' : this.conditions,
-        'actions' : this.actions,
-        'contents' : this.contents,
-        'objectType' : this.objectType,
-        'contentType' : this.contentType,
-      }
+      const data = this.lan
       window.electronAPI.saveData(data)
     },
     addItem(item) {
       if (item.objectType == 'category') {
-        this.categories.push(item)
+        this.lan.categories.push(item)
       }
       else if (item.objectType == 'relation') {
-        this.relations.push(item)
+        this.lan.relations.push(item)
       }
       else if (item.objectType == 'statement') {
-        this.statements.push(item)
+        this.lan.statements.push(item)
       }
       else if (item.objectType == 'condition') {
-        this.conditions.push(item)
+        this.lan.conditions.push(item)
       }
       else if (item.objectType == 'action') {
-        this.actions.push(item)
+        this.lan.actions.push(item)
       }
       else {
-        this.concepts.push(item)
+        this.lan.concepts.push(item)
       }
     },
     addTag(target, tag) {
@@ -488,33 +419,33 @@ export default {
     },
     deleteItem(item) {
       if (item.objectType == 'category') {
-        this.categories = this.categories.filter(category => category.id !== item.id);
+        this.lan.categories = this.lan.categories.filter(category => category.id !== item.id);
       }
       else if (item.objectType == 'relation') {
-        this.relations = this.relations.filter(relation => relation.id !== item.id);
+        this.lan.relations = this.lan.relations.filter(relation => relation.id !== item.id);
       }
       else if (item.objectType == 'statement') {
-        this.statements = this.statements.filter(statement => statement.id !== item.id);
+        this.lan.statements = this.lan.statements.filter(statement => statement.id !== item.id);
       }
       else if (item.objectType == 'condition') {
-        this.conditions = this.conditions.filter(condition => condition.id !== item.id);
+        this.lan.conditions = this.lan.conditions.filter(condition => condition.id !== item.id);
       }
       else if (item.objectType == 'action') {
-        this.actions = this.actions.filter(action => action.id !== item.id);
+        this.lan.actions = this.lan.actions.filter(action => action.id !== item.id);
       }
       else {
-        this.concepts = this.concepts.filter(concept => concept.id !== item.id);
+        this.lan.concepts = this.lan.concepts.filter(concept => concept.id !== item.id);
       }
     },
     updateContents(contents) {
-      this.contents = contents
+      this.lan.contents = contents
       this.saveData()
     },
     createObject(name, object, content) {
       if (object==0) {
         let category = new Category()
         category.name = name
-        this.categories.push(category)
+        this.lan.categories.push(category)
 
         EventBus.$emit('setQuery', category)
       }
@@ -522,21 +453,21 @@ export default {
         if (content==1) {
           let concept = new Concept()
           concept.name = name
-          this.concepts.push(concept)
+          this.lan.concepts.push(concept)
 
           EventBus.$emit('setQuery', concept)
         }
         else if (content==2) {
           let concept = new Concept()
           concept.name = name
-          this.concepts.push(concept)
+          this.lan.concepts.push(concept)
 
           EventBus.$emit('setQuery', concept)
         }
         else {
           let concept = new Concept()
           concept.name = name
-          this.concepts.push(concept)
+          this.lan.concepts.push(concept)
 
           EventBus.$emit('setQuery', concept)
         }
@@ -544,28 +475,28 @@ export default {
       else if (object==2) {
         let relation = new Relation()
         relation.name = name
-        this.relations.push(relation)
+        this.lan.relations.push(relation)
 
         EventBus.$emit('setQuery', relation)
       }
       else if (object==3) {
         let statement = new Statement()
         statement.name = name
-        this.statements.push(statement)
+        this.lan.statements.push(statement)
 
         EventBus.$emit('setQuery', statement)
       }
       else if (object==4) {
         let condition = new Condition()
         condition.name = name
-        this.conditions.push(condition)
+        this.lan.conditions.push(condition)
 
         EventBus.$emit('setQuery', condition)
       }
       else if (object==5) {
         let action = new Action ()
         action.name = name
-        this.actions.push(action)
+        this.lan.actions.push(action)
 
         EventBus.$emit('setQuery', action)
       }
@@ -583,23 +514,37 @@ export default {
     contentType: 'saveData',
   },
   async created() {
-    const message = await new Promise(resolve => {
+    //SideBar.vue methods
+    /*EventBus.$on('createFile', this.createFile);
+    EventBus.$on('createFolder', this.createFolder);
+    EventBus.$on('toggleTreeview', this.toggleTreeview);
+    EventBus.$on('removeNodeFile', this.removeNodeFile);*/
+        //TreeView.vue methods
+        EventBus.$on('openNode', this.openNode);
+        EventBus.$on('saveFileNode', this.saveFileNode)
+        EventBus.$on('fileopened', this.openFile);
+        EventBus.$on('filemove', this.moveFile);
+
+    const data = await new Promise(resolve => {
       window.electronAPI.getData()
       window.electronAPI.response('get-data-response', resolve)
     })
 
-    this.showing = message.showing || 'board';
-    this.concepts = message.concepts || [];
-    this.relations = message.relations || [];
-    this.categories = message.categories || [];
-    this.statements = message.statements || [];
-    this.conditions = message.conditions || [];
-    this.actions = message.actions || [];
-    this.contents = message.contents || [];
-    this.contentType = message.contentType;
-    this.objectType = message.objectType;
+    let lan = new Lan(data.name, data.location)
 
+    for (const key in lan) {
+      lan[key] = data[key];
+    }
+
+    this.lan = lan
     this.loaded = true;
+
+    const folderStructure = await new Promise(resolve => {
+      window.electronAPI.getFolderStructure()
+      window.electronAPI.response('get-folder-structure-response', resolve)
+    })
+
+    this.folderStructure = folderStructure
 
     //Generic Events
     EventBus.$on('saveData', this.saveData)
@@ -620,6 +565,63 @@ export default {
 </script>
 
 <style>
+  #titlebar {
+    border-bottom: 1px solid #ccc;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+    -webkit-app-region: drag;
+  }
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  .mini-hr {
+    height: 2px;
+    width: 8px;
+    background: var(--v-error-base);
+  }
+
+  #main {
+    display: flex;
+    height: calc(100vh - 30px);
+    width: 100h;
+    overflow: hidden;
+  }
+  #leftsidebar {
+    background: #eee;
+    height: 100%;
+    width: 200px;
+    display: flex;
+    flex-direction: column;
+  }
+  #treeview {
+    height: calc(100% - 38px);
+    overflow: auto;
+  }
+  #treeview::-webkit-scrollbar {
+    width: 5px;
+    height: 0;
+  }
+  #treeview::-webkit-scrollbar-track {
+    background: rgba(255, 0, 0, .1);
+  }
+  #treeview::-webkit-scrollbar-thumb {
+    background-color: var(--v-error-base);
+    border-radius: 10px;
+  }
+  #contents {
+    height: 100%;
+    flex: 1;
+  }
+  #rightsidebar {
+    background: #eee;
+    height: 100%;
+    width: 200px;
+  }
+
+  /*
   ::-webkit-scrollbar {
     display: none;
   }
@@ -889,4 +891,5 @@ export default {
     text-decoration-color: var(--v-primary-base) !important;
     text-decoration : underline;
   }
+  */
 </style>
