@@ -17,10 +17,10 @@
       <line 
         v-for="(relation, i) in relations" 
         :key="i" 
-        :x1="(getObjectById(relation.object).x+relation.offsetX1)+'px'"
-        :y1="(getObjectById(relation.object).y+relation.offsetY1)+'px'"
-        :x2="(getObjectById(relation.subject).x+relation.offsetX2)+'px'"
-        :y2="(getObjectById(relation.subject).y+relation.offsetY2)+'px'"
+        :x1="getObjectById(relation.object).x+'px'"
+        :y1="getObjectById(relation.object).y+'px'"
+        :x2="getObjectById(relation.subject).x+'px'"
+        :y2="getObjectById(relation.subject).y+'px'"
       >
       </line>
     </svg>
@@ -355,10 +355,10 @@
           this.creatingRelation[0][0].relations.push(relation.id)
           this.creatingRelation[1][0].relations.push(relation.id)
           
-          relation.offsetX1 = - this.creatingRelation[0][0].x + this.creatingRelation[0][1].x + this.creatingRelation[0][1].width/2
+          /*relation.offsetX1 = - this.creatingRelation[0][0].x + this.creatingRelation[0][1].x + this.creatingRelation[0][1].width/2
           relation.offsetY1 = - this.creatingRelation[0][0].y + this.creatingRelation[0][1].y - 56 + this.creatingRelation[0][1].height/2
           relation.offsetX2 = - this.creatingRelation[1][0].x + this.creatingRelation[1][1].x + this.creatingRelation[1][1].width/2
-          relation.offsetY2 = - this.creatingRelation[1][0].y + this.creatingRelation[1][1].y - 56 + this.creatingRelation[1][1].height/2
+          relation.offsetY2 = - this.creatingRelation[1][0].y + this.creatingRelation[1][1].y - 56 + this.creatingRelation[1][1].height/2*/
 
           let line = document.getElementById('creating-relation-line');
           line.remove()
@@ -678,7 +678,6 @@ line {
 #generalSVG {
   position: absolute;
   overflow: visible;
-  transform: translateX(-200px) translateY(26px);
 }
 #generalFunctionsSVG {
   position: absolute;

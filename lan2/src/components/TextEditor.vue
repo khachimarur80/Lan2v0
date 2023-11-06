@@ -1,6 +1,6 @@
 <template>
   <div id="text">
-    <v-card width="100%" min-height="100%"  outlined class="pa-1 pt-3 text-content">
+    <v-card width="100%" height="100%"  outlined class="pa-1 pt-3 text-content">
       <div 
         style="height: 100%; width: 100%; outline: none; color: white" 
         @click="lineClick"
@@ -585,8 +585,10 @@ export default {
             }
           }
           
-          concept.x = circle*80*Math.cos(angle)
-          concept.y = circle*80*Math.sin(angle)
+          const rect = document.getElementById('text').getBoundingClientRect();
+
+          concept.x = circle*80*Math.cos(angle) + rect.width/2
+          concept.y = circle*80*Math.sin(angle) + rect.height/2
 
         this.$emit('addItem', concept)
 
