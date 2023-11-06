@@ -5,48 +5,64 @@
     </div>
     <v-main>
       <div id="main">
-        <div id="leftsidebar">
-          <div class="subtitle-2 px-2 py-2">
+        <div id="leftsidebar" :class="showFolderStructure ? '' : 'hideFolders' ">
+          <div id="folderStructure" class="d-flex flex-column" style="flex: 1;">
+            <div class="subtitle-2 px-2 py-2">
             Carpetas
-          </div>
-          <div id="treeview" class="mx-1">
+            </div>
+            <div id="treeview" class="mx-1">
             <TreeView :items="folderStructure" :vault="lan.name" v-if="folderStructure"></TreeView>
+            </div>
           </div>
-        </div>
-        <div id="contents" @wheel="zoomBoard">
-          <div class="d-flex align-center justify-center py-1">
-            <v-btn icon dense small class="mx-2" :color="lan.showing=='board' ? 'error' : ''" @click="setShowing('board')">
+          <div id="menu" class="d-flex justify-start align-center pt-2 flex-column">
+            <v-btn icon dense x-small @click="showFolderStructure=!showFolderStructure" :color="showFolderStructure ? 'error' : ''">
+              <v-icon>
+                mdi-folder-multiple-outline
+              </v-icon>
+            </v-btn>
+
+            <v-divider style="width: 20px" class="my-1">
+            </v-divider>
+
+            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='board' ? 'error' : ''" @click="setShowing('board')">
               <v-icon>
                 mdi-source-fork
               </v-icon>
             </v-btn>
-            <v-btn icon dense small class="mx-2" :color="lan.showing=='text' ? 'error' : ''" @click="setShowing('text')">
+            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='text' ? 'error' : ''" @click="setShowing('text')">
               <v-icon>
                 mdi-text-recognition
               </v-icon>
             </v-btn>
-            <v-btn icon dense small class="mx-2" :color="lan.showing=='function' ? 'error' : ''" @click="setShowing('function')">
-              <v-icon>
-                mdi-function-variant
-              </v-icon>
-            </v-btn>
-            <v-btn icon dense small class="mx-2" :color="lan.showing=='table' ? 'error' : ''" @click="setShowing('table')">
+            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='table' ? 'error' : ''" @click="setShowing('table')">
               <v-icon>
                 mdi-table
               </v-icon>
             </v-btn>
-            <v-btn icon dense small class="mx-2" :color="lan.showing=='query' ? 'error' : ''" @click="setShowing('query')">
+            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='query' ? 'error' : ''" @click="setShowing('query')">
               <v-icon>
                 mdi-database-search
               </v-icon>
             </v-btn>
+            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='function' ? 'error' : ''" @click="setShowing('function')">
+              <v-icon>
+                mdi-function-variant
+              </v-icon>
+            </v-btn>
+
+            <v-divider style="width: 20px" class="my-1">
+            </v-divider>
+
           </div>
+        </div>
+        <div id="contents" @wheel="zoomBoard">
           <BoardView 
             v-if="lan.showing=='board'" 
             :concepts="lan.concepts"
             :relations="lan.relations"
             :categories="lan.categories"
             :selectingArea="lan.selectingArea"
+            :zoomVal="lan.zoomVal"
           />
           <TableView 
             v-if="lan.showing=='table'"
@@ -85,7 +101,9 @@
           :conditions="lan.conditions"
           />
         </div>
-        <div id="rightsidebar">
+        <div id="rightsidebar" class="pa-2 d-flex justify-center flex-column">
+          <v-text-field>
+          </v-text-field>
         </div>
       </div>
     </v-main>
@@ -236,6 +254,7 @@ export default {
   data: () => ({
     //Left Sidebar Variables
     folderStructure: null,
+    showFolderStructure: false,
 
     lan: null,
   }),
@@ -309,8 +328,9 @@ export default {
     zoomBoard(event) {
       if (this.lan.showing=='board') {
         this.lan.zoomVal += event.deltaY*0.0005
-        this.lan.zoomVal = Math.max(Math.min(10, this.zoomVal), .1)
-        document.getElementById('board').style.transform = `scale(${this.zoomVal})`
+        this.lan.zoomVal = Math.max(Math.min(10, this.lan.zoomVal), .1)
+
+        //document.getElementById('board').style.transform = `scale(${this.lan.zoomVal})`
       }
     },
     createStatement(type) {
@@ -391,7 +411,8 @@ export default {
     },
     saveData() {
       const data = this.lan
-      window.electronAPI.saveData(data)
+      console.log(data)
+      //window.electronAPI.saveData(data)
     },
     addItem(item) {
       if (item.objectType == 'category') {
@@ -590,11 +611,26 @@ export default {
     overflow: hidden;
   }
   #leftsidebar {
-    background: #eee;
+    background: #f6f6f6;
     height: 100%;
     width: 200px;
     display: flex;
-    flex-direction: column;
+    transition: transform .2s ease-in-out;
+  }
+  #leftsidebar.hideFolders {
+    transform: translateX(-170px);
+    flex-direction: row-reverse;
+  }
+  #leftsidebar.hideFolders #folderStructure {
+    display: none !important;
+  }
+
+  #menu {
+    width: 30px;
+    height: 100%;
+    border-left: 1px solid #eee;
+    border-right: 1px solid #eee;
+    gap: 5px;
   }
   #treeview {
     height: calc(100% - 38px);
@@ -614,11 +650,23 @@ export default {
   #contents {
     height: 100%;
     flex: 1;
+    overflow: hidden;
+    position: relative;
   }
   #rightsidebar {
-    background: #eee;
+    background: #f6f6f6;
     height: 100%;
     width: 200px;
+    border-left: 1px solid #eee;
+  }
+
+  .inline-concept {
+    color: var(--v-success-base) !important;
+    cursor: pointer;
+  }
+  .highlight-concept {
+    text-decoration-color: var(--v-primary-base) !important;
+    text-decoration : underline;
   }
 
   /*

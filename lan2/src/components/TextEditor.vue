@@ -2,7 +2,7 @@
   <div id="text">
     <v-card width="100%" min-height="100%"  outlined class="pa-1 pt-3 text-content">
       <div 
-        style="height: 100%; width: 100%; outline: none;" 
+        style="height: 100%; width: 100%; outline: none; color: white" 
         @click="lineClick"
         @keyup="lineKeyup" 
         @keydown="lineKeydown"
@@ -653,7 +653,7 @@ export default {
   height: 10px;
   width: 10px;
   border-radius: 50%;
-  background: var(--v-success-base);
+  background: var(--v-error-base);
   left: 37px;
   top: 50%;
   transform: translateY(-50%);
@@ -661,7 +661,7 @@ export default {
   transform-origin: top center;
 }
 .currentLine .line-count {
-  filter: brightness(.7);
+  filter: brightness(.3);
 }
 @keyframes breathe {
   from {
@@ -697,7 +697,7 @@ export default {
 }
 .line-count {
   width: 25px;
-  filter: brightness(.3);
+  filter: brightness(.7);
   user-select: none;
   display: flex;
   align-items: center;
@@ -707,6 +707,7 @@ export default {
   outline: none;
   cursor: text;
   white-space: nowrap;
+  color: #222;
 }
 .comments {
   opacity: 0;

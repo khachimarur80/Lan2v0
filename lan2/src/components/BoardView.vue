@@ -1,18 +1,31 @@
 <template>
   <div id="board" @mousedown="boardMouseDown" @mousemove="boardMouseMove" @mouseup="boardMouseUp">
+    <div id="zoomVal">
+      <v-btn icon dense small outlined>
+        <v-icon>
+          mdi-minus
+        </v-icon>
+      </v-btn>
+      <span class="text-body-2 ml-1">{{ parseInt(zoomVal*100) }} %</span>
+      <v-btn icon dense small outlined>
+        <v-icon>
+          mdi-plus
+        </v-icon>
+      </v-btn>
+    </div>
     <svg id="generalSVG" height="100%" width="100%">
       <line 
         v-for="(relation, i) in relations" 
         :key="i" 
-        :x1="getObjectById(relation.object).x+relation.offsetX1+'px'"
-        :y1="getObjectById(relation.object).y+relation.offsetY1+'px'"
-        :x2="getObjectById(relation.subject).x+relation.offsetX2+'px'"
-        :y2="getObjectById(relation.subject).y+relation.offsetY2+'px'"
+        :x1="(getObjectById(relation.object).x+relation.offsetX1)+'px'"
+        :y1="(getObjectById(relation.object).y+relation.offsetY1)+'px'"
+        :x2="(getObjectById(relation.subject).x+relation.offsetX2)+'px'"
+        :y2="(getObjectById(relation.subject).y+relation.offsetY2)+'px'"
       >
       </line>
     </svg>
     <div v-if="rectangle" class="rectangle" :style="{ top: rectangle.top, left: rectangle.left, width: rectangle.width, height: rectangle.height, } "></div>
-    <div class="concept" v-for="concept in concepts" :key="concept.id" :style="{ top : concept.y + 'px', left : concept.x+'px' }" :data-id="concept.id" ref="concept" draggable="true">
+    <div class="concept" v-for="concept in concepts" :key="concept.id" :style="conceptPos(concept)" :data-id="concept.id" ref="concept" draggable="true">
       <div class="concept-inner">
         <v-card>
           <div class="d-flex">
@@ -172,6 +185,9 @@
       },
       selectingArea: {
         require: true,
+      },
+      zoomVal: {
+        require: true,
       }
     },
 
@@ -239,8 +255,10 @@
             }
           else {
             let concept = new Concept()
-            concept.x = event.x - event.target.getBoundingClientRect().left
-            concept.y = event.y - event.target.getBoundingClientRect().top
+            const rect = document.getElementById('board').getBoundingClientRect();
+
+            concept.x = event.x - rect.left
+            concept.y = event.y - rect.top
 
             EventBus.$emit('addItem', concept)
 
@@ -258,17 +276,19 @@
         if (this.creatingRelation[0]) {
           if (document.getElementById('creating-relation-line')) {
             let line = document.getElementById('creating-relation-line');
-            line.setAttributeNS(null, 'x2', event.x);
-            line.setAttributeNS(null, 'y2', event.y - 56);
+
+            line.setAttributeNS(null, 'x2', event.clientX);
+            line.setAttributeNS(null, 'y2', event.clientY - 55);
           }
           else {
             let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
             line.id = 'creating-relation-line'
+
             line.setAttributeNS(null, 'x1', this.creatingRelation[0][1].x + this.creatingRelation[0][1].width/2);
-            line.setAttributeNS(null, 'y1', this.creatingRelation[0][1].y - 56 + this.creatingRelation[0][1].height/2);
+            line.setAttributeNS(null, 'y1', this.creatingRelation[0][1].y - 55 + this.creatingRelation[0][1].height/2);
             line.setAttributeNS(null, 'x2', event.x);
             line.setAttributeNS(null, 'y2', event.y);
-            line.setAttributeNS(null, 'stroke', 'white');
+            line.setAttributeNS(null, 'stroke', 'red');
             line.setAttributeNS(null, 'stroke-width', '1');
 
             document.getElementById('generalSVG').appendChild(line)
@@ -381,6 +401,7 @@
       },
       dragConcept(word) {
         const vm = this;
+        // eslint-disable-next-line
         var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
         var wordObj = this.getObjectById(word.getAttribute('data-id'))
         var original = [parseInt(wordObj.x), parseInt(wordObj.y)];
@@ -409,8 +430,8 @@
           pos3 = e.clientX;
           pos4 = e.clientY;
 
-          wordObj.y = (word.offsetTop - pos2)
-          wordObj.x = (word.offsetLeft - pos1)
+          wordObj.x = word.offsetLeft - pos1
+          wordObj.y = word.offsetTop - pos2
 
           if (vm.hoveringBox(word)) {
             word.classList.add('hovering')
@@ -467,7 +488,11 @@
 
           return degrees;
         }
-
+      },
+      conceptPos() {
+        return (concept) => {
+          return { top : concept.y + 'px', left : concept.x + 'px' }
+        }
       }
     },
     created() {
@@ -482,16 +507,7 @@
   }
 </script>
 <style scoped>
-.concept-toolbar {
-  position: absolute;
-  top: -35px;
-  display: flex;
-  left: 50%;
-  gap: 0px;
-  transform: translateX(-50%);
-  justify-content: center;
-  align-items: center;
-}
+
 .relation-toolbar {
   position: absolute;
   top: -35px;
@@ -598,6 +614,97 @@
   padding-right: 3px;
   color: var(--v-primary-base);
   transform-origin: center;
-  background: #121212;
+  background: #fff;
+}
+
+line {
+  stroke-width: 3px !important;
+  stroke: var(--v-primary-base);
+}
+
+#board {
+  flex: 1;
+  height: calc(100vh - 30px);
+  cursor: crosshair;
+  position: absolute;
+  width: 100%;
+  background-size: 40px 40px;
+  background-image: radial-gradient(circle, #000000 1px, rgba(0, 0, 0, 0) 1px);
+  background-repeat: repeat;
+}
+::-webkit-scrollbar {
+  display: none;
+}
+line {
+  stroke-width: 3px !important;
+  stroke: var(--v-primary-base);
+}
+#contents {
+  display: flex;
+  height: calc(100vh - 64px);
+  width: 100h;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+
+.node {
+  height: 8px;
+  width: 8px;
+  border-radius: 50%;
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.node.center {
+  top: 50%;
+  right: 50%;
+  transform: translate(50%, -50%);
+}
+
+.node:hover {
+  background: #fff;
+  cursor: pointer;
+}
+.node:hover .node-inner {
+  background: black;
+}
+.node-inner {
+  height: 6px;
+  width: 6px;
+  border-radius: 50%;
+}
+#generalSVG {
+  position: absolute;
+  overflow: visible;
+  transform: translateX(-200px) translateY(26px);
+}
+#generalFunctionsSVG {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.rectangle {
+  background: rgba(255,0,0,.1);
+  outline: 1px dotted red;
+  position: absolute;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+table, th, td {
+  border: 1px solid #333;
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px;
+}
+#zoomVal {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #fff;
 }
 </style>
