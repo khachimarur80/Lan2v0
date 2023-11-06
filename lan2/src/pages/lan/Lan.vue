@@ -34,17 +34,17 @@
                 mdi-text-recognition
               </v-icon>
             </v-btn>
-            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='table' ? 'error' : ''" @click="setShowing('table')">
-              <v-icon>
-                mdi-table
-              </v-icon>
-            </v-btn>
             <v-btn icon dense x-small class="mx-2" :color="lan.showing=='query' ? 'error' : ''" @click="setShowing('query')">
               <v-icon>
                 mdi-database-search
               </v-icon>
             </v-btn>
-            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='function' ? 'error' : ''" @click="setShowing('function')">
+            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='table' ? 'error' : ''" @click="setShowing('table')" disabled>
+              <v-icon>
+                mdi-table
+              </v-icon>
+            </v-btn>
+            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='function' ? 'error' : ''" @click="setShowing('function')" disabled>
               <v-icon>
                 mdi-function-variant
               </v-icon>
@@ -911,19 +911,6 @@ export default {
   }
   .statement-relation {
     border: 1px solid var(--v-primary-base) !important;
-  }
-  table {
-    border-collapse: collapse;
-    width: 100%;
-  }
-  table, th, td {
-    border: 1px solid #333;
-    text-align: center;
-    vertical-align: middle;
-    padding: 8px;
-  }
-  .markdown > * {
-    margin: 20px 0;
   }
   .true {
     box-shadow: 0px 0px 5px 2px hsl(114, 100%, 50%);

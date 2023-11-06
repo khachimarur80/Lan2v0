@@ -1,6 +1,5 @@
 <template>
-  <v-container>
-    <div id="query">
+  <div id="query">
       <div id="filter">
         <v-row dense no-gutters class="mt-1">
           <v-col cols="4" class="d-flex justify-center">
@@ -233,7 +232,7 @@
             </v-card-actions>
           </div>
         </v-card>
-        <v-card width="50%" height="100%" flat class="pa-3 overflow-auto" v-if="objectType==1 && selectedQuery.id">
+        <v-card width="50%" height="100%" flat class="pa-3 overflow-auto" v-if="selectedQuery.objectType == 'concept'">
           <div class="text-body-1" v-if="selectedQuery.data=='link'" style="height: calc(100% - 130px);">
             <div class="text-h5">Contents</div><br>
             <div class="d-flex align-center">
@@ -285,8 +284,7 @@
           </div>
         </v-card>
       </div>
-    </div>
-  </v-container>
+  </div>
 </template>
 
 <script>
@@ -559,5 +557,18 @@
     gap: 10px;
     justify-content: center;
     align-items: center;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  table, th, td {
+    border: 1px solid #333;
+    text-align: center;
+    vertical-align: middle;
+    padding: 8px;
+  }
+  .markdown > * {
+    margin: 20px 0;
   }
 </style>

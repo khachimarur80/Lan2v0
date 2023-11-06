@@ -127,7 +127,6 @@ function createLanWindow(devPath) {
       preload: path.join(__dirname, '../src/preload.js')
     }
   })
-  win.setMaximizable(false);
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     win.loadURL(process.env.WEBPACK_DEV_SERVER_URL + devPath)
   }
@@ -170,7 +169,7 @@ app.on('ready', async () => {
     let options;
 
     if (type === 'image') {
-      filters = [{ name: 'Images', extensions: ['jpg', 'png'] }];
+      filters = [{ name: 'Images', extensions: ['jpg', 'png', 'jpeg'] }];
       options = {
         filters: filters,
       }
