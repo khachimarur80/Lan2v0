@@ -1,6 +1,6 @@
 <template>
   <div id="text">
-    <v-card width="100%" height="100%"  outlined class="pa-1 pt-3 text-content">
+    <v-card width="100%" height="100%"  class="pa-1 pt-3 text-content" style="border-radius: 0px !important;" elevation="0">
       <div 
         style="height: 100%; width: 100%; outline: none; color: white" 
         @click="lineClick"
@@ -663,7 +663,7 @@ export default {
   transform-origin: top center;
 }
 .currentLine .line-count {
-  filter: brightness(.3);
+  filter: brightness(.7);
 }
 @keyframes breathe {
   from {
@@ -699,7 +699,7 @@ export default {
 }
 .line-count {
   width: 25px;
-  filter: brightness(.7);
+  filter: brightness(.3);
   user-select: none;
   display: flex;
   align-items: center;
@@ -709,7 +709,7 @@ export default {
   outline: none;
   cursor: text;
   white-space: nowrap;
-  color: #222;
+  color: #eee;
 }
 .comments {
   opacity: 0;

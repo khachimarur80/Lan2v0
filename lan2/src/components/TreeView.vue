@@ -98,9 +98,7 @@
                     }
             },
             openFile(node) {
-                if (!node.isDirectory) {
-                    EventBus.$emit('fileopened', node.id);
-                }
+                EventBus.$emit('fileopened', node.id);
                 if (document.querySelector('.active-node')) {
                     document.querySelector('.active-node').classList.remove('active-node')
                 }
@@ -157,27 +155,35 @@
     z-index: 1;
 }
 
+.line-indent {
+    width: 15px;
+    height: 24px;
+    background: red;
+    border-left: 1px solid #363636;
+}
+
+.tree-node {
+    position: relative;
+    z-index: 1;
+}
+
 .node-indent {
     width: 15px;
     height: 28px ;
     transform: translateX(13px);
-    border-left: 1px solid var(--v-error-lighten3);
-
+    border-left: 1px solid #4E4E4E;
 }
 
 .node-content {
     font-size: 14px;
-    color: #444;
+    color: #B9B9B9;
     display: flex;
     padding-right: 10px;
     align-items: center;
-    width: 100% !important;
 }
 .node-content-collapse {
     transition: transform ease-in-out .2s;
     position: relative;
-    margin-left: 1px;
-    margin-top: 1px;
 }
 .node-content::after {
     content: '';
@@ -186,7 +192,7 @@
     top: 0px;
     bottom: 0px;
     left: 8px;
-    background: #000;
+    background: #4F4F4F;
     display: none;
 }
 .node-content-collapse:hover * {
@@ -204,33 +210,34 @@
     left: 1px;
     border-radius: 3px;
     z-index: -1;
-    transition: background ease-in-out;
-    opacity: .3;
+    transition: background ease-in-out 0.1s;
+}
+.node-content::before:last-child {
+    background: red;
 }
 .node-content:hover::before {
-    background: #aaa;
+    background: #363636;
 }
 .node-content-text {
     padding: 2px;
-    display: flex;
-    width: 100% !important;
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: flex;
+    width: 100%;
 }
 
 .treeview-container {
-    height: fit-content;
+    height: 100%;
+    overflow: scroll;
 }
-
 .node-file-name {
     padding: 1px;
     padding-left: 5px;
     padding-right: 5px;
     border-radius: 3px;
-    height: 24px;
     flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    height: 24px;
 }
 .node-file-name:focus-within {
     outline: none;
@@ -255,10 +262,8 @@
     left: 1px;
     border-radius: 3px;
     z-index: -1;
-    background: var(--v-error-base) !important;
-    opacity: .3;
+    background: #363636;
 }
-
 .drag-over-node::before {
     content: '';
     position: absolute;
@@ -269,43 +274,5 @@
     border-radius: 3px;
     z-index: -1;
     border: 1px solid var(--v-error-base);
-}
-#node-click-menu {
-    position: absolute;
-    border: 1px solid rgb(87, 87, 87);
-    width: fit-content;
-    min-height: 48px;
-    border-radius: 5px;
-    z-index: 101;
-    background: rgba(45, 45, 45);
-    height: fit-content;
-    padding: 3px;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    outline: none;
-}
-.node-menu-item {
-    font-size: 14px;
-    min-width: 120px;
-    display: flex;
-    padding-left: 10px;
-    color: #B9B9B9;
-    justify-content: flex-start;
-    align-items: center;
-    border-radius: 3px;
-}
-.node-menu-item:hover {
-    background: rgba(98, 141, 208, .7);
-}
-
-#main-vault {
-    width: 100%;
-    margin-left: 35px;
-    font-size: 14px;
-    color: rgb(218, 218, 218);
-}
-.main-node {
-    font-weight: bold;
 }
 </style>

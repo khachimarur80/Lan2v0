@@ -19,4 +19,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     openLan: (lan) => ipcRenderer.send('open-lan', lan),
     getFolderStructure: () => ipcRenderer.send('get-folder-structure'),
     moveFileRequest: (filepath, destinypath) => ipcRenderer.send('move-file-request', filepath, destinypath),
+    createFile: (directory) => ipcRenderer.send('create-file', directory),
+
+    requestChangeFileName: (targetFile, value) => ipcRenderer.send('request-change-filename', targetFile, value),
+    requestFileDeletion: (fileName) => ipcRenderer.send('request-file-deletion', fileName),
 })

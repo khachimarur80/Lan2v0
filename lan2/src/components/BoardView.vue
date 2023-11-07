@@ -1,13 +1,13 @@
 <template>
   <div id="board" @mousedown="boardMouseDown" @mousemove="boardMouseMove" @mouseup="boardMouseUp">
     <div id="zoomVal">
-      <v-btn icon dense small outlined>
+      <v-btn icon dense small>
         <v-icon>
           mdi-minus
         </v-icon>
       </v-btn>
       <span class="text-body-2 ml-1">{{ parseInt(zoomVal*100) }} %</span>
-      <v-btn icon dense small outlined>
+      <v-btn icon dense small>
         <v-icon>
           mdi-plus
         </v-icon>
@@ -628,9 +628,9 @@ line {
   cursor: crosshair;
   position: absolute;
   width: 100%;
-  background-size: 40px 40px;
+  /*background-size: 40px 40px;
   background-image: radial-gradient(circle, #000000 1px, rgba(0, 0, 0, 0) 1px);
-  background-repeat: repeat;
+  background-repeat: repeat;*/
 }
 ::-webkit-scrollbar {
   display: none;
@@ -704,6 +704,9 @@ table, th, td {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: #fff;
+  background: #121212;
+  cursor: default;
+  user-select: none;
+  z-index: 3;
 }
 </style>

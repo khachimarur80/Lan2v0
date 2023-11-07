@@ -4,7 +4,7 @@ import { app, protocol, BrowserWindow, ipcMain, dialog } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs-extra');
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
 protocol.registerSchemesAsPrivileged([
@@ -43,6 +43,22 @@ class Lan {
 
 let win
 let currentLan
+
+function getTargetDirectory(directory) {
+  if (fs.existsSync(directory)) {
+    if (fs.statSync(directory).isDirectory()) {
+      return directory;
+    } else {
+      const fileDirectory = path.dirname(directory);
+      console.log(`Using directory of the file: ${fileDirectory}`);
+      return fileDirectory;
+    }
+  }
+  else {
+    console.log('Invalid directory path');
+    return null;
+  }
+}
 
 function generateTreeData(dirPath) {
   function readDirectoryRecursively(currentPath, parentDirectories = []) {
@@ -93,7 +109,7 @@ function createHomeWindow(devPath) {
   let win = new BrowserWindow({
     width: 700,
     height: 700,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#121212',
     titleBarStyle: 'hidden',
     trafficLightPosition: { x: 11, y: 12 },
     frame: false,
@@ -121,7 +137,9 @@ function createLanWindow(devPath) {
     width: 1025,
     height: 800,
     titleBarStyle: 'hidden',
-    backgroundColor: '#ffffff',
+    roundedCorners: false,
+    hasShadow: false,
+    backgroundColor: '#121212',
     webPreferences: {
       nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
       preload: path.join(__dirname, '../src/preload.js')
@@ -269,6 +287,56 @@ app.on('ready', async () => {
   // ----------------------------------------------------------------------- //
   // ----------------------------- Lan Window ------------------------------ //
   // ----------------------------------------------------------------------- //
+
+  ipcMain.on('request-change-filename', (event, targetFile, value) => {
+    console.log("Change filename requested!");
+    console.log(targetFile);
+    console.log("\n");
+    const currentFilePath = path.dirname(targetFile);
+    const currentFileName = path.basename(targetFile);
+
+    const ext = path.extname(currentFileName);
+    const newFileName = value + ext;
+    const newFilePath = path.join(currentFilePath, newFileName);
+
+    if (fs.existsSync(newFilePath)) {
+      win.webContents.send('change-filename-response', false);
+      return;
+    }
+
+    fs.rename(targetFile, newFilePath, () => {
+        win.webContents.send('change-filename-response', newFilePath);
+      });
+  });
+  
+  ipcMain.on('request-file-deletion', (event, filePath) => {
+    console.log('File deletion requested:', filePath);
+
+    const absoluteFilePath = path.resolve(filePath);
+    fs.remove(absoluteFilePath, ()=>{})
+  });
+
+  ipcMain.on('create-file', (event, directory) => {
+    const targetDirectory = getTargetDirectory(directory);
+
+    if (!targetDirectory) {
+      return;
+    }
+
+    let fileName = 'untitled.md';
+    let count = 1;
+    let filePath = path.join(targetDirectory, fileName);
+
+    while (fs.existsSync(filePath)) {
+      fileName = `untitled ${count}.md`;
+      filePath = path.join(targetDirectory, fileName);
+      count++;
+    }
+
+    fs.writeFileSync(filePath, '', 'utf-8'); // Create an empty file
+
+    win.webContents.send('create-file-response' ,filePath)
+  });
 
   ipcMain.on('save-data', (event, data) => {
     const filePath = path.join(currentLan.location, currentLan.name,'.lan.json');

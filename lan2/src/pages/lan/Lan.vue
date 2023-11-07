@@ -1,7 +1,7 @@
 <template>
   <v-app v-if="lan">
     <div id="titlebar" class="text-overline">
-      <span>{{ lan.name }}</span><span class="mini-hr mx-1"></span> <span style="color: var(--v-error-base);">lan2</span>
+      <span>{{ fileName(file) }}</span><span class="mini-hr mx-1"></span> <span style="color: var(--v-error-base);">lan2</span>
     </div>
     <v-main>
       <div id="main">
@@ -12,6 +12,15 @@
             </div>
             <div id="treeview" class="mx-1">
             <TreeView :items="folderStructure" :vault="lan.name" v-if="folderStructure"></TreeView>
+            <div id="node-click-menu" v-if="clickMenu.opened" @blur="hideContextMenu"
+              :style="{'top' : clickMenu.y + 'px', 'left' : clickMenu.x + 'px'}" tabindex="1">
+              <div class="node-menu-item" @click="renameFile">
+                  Rename
+              </div>
+              <div class="node-menu-item" @click="removeNodeFile">
+                  Delete
+              </div>    
+          </div>
             </div>
           </div>
           <div id="menu" class="d-flex justify-start align-center pt-2 flex-column">
@@ -56,50 +65,76 @@
           </div>
         </div>
         <div id="contents" @wheel="zoomBoard">
-          <BoardView 
-            v-if="lan.showing=='board'" 
-            :concepts="lan.concepts"
-            :relations="lan.relations"
-            :categories="lan.categories"
-            :selectingArea="lan.selectingArea"
-            :zoomVal="lan.zoomVal"
-          />
-          <TableView 
-            v-if="lan.showing=='table'"
+          <div id="tabs" class="px-2 py-1 d-flex">
+            <v-btn small icon class="mr-2" @click="createFile">
+              <v-icon>
+                mdi-plus
+              </v-icon>
+            </v-btn>
+            <div id="tabs-inner" class="d-flex" @wheel="scrollHorizontal">
+              <div
+                v-for="(tab, i) in tabs" 
+                :key="i" 
+                @click="openFile(tab)"
+                :class="tab==file ? 'active-tab' : 'tab'"
+                style="border-radius: 0px !important;"
+                >
+                {{ fileName(tab) }}
+                <v-btn @click="removeTab" x-small icon class="ml-1">
+                  <v-icon>
+                    mdi-close
+                  </v-icon>
+                </v-btn>
+              </div>
+            </div>
+          </div>
+
+          <div id="contents-inner">
+            <BoardView 
+              v-if="lan.showing=='board'" 
+              :concepts="lan.concepts"
+              :relations="lan.relations"
+              :categories="lan.categories"
+              :selectingArea="lan.selectingArea"
+              :zoomVal="lan.zoomVal"
+            />
+            <TableView 
+              v-if="lan.showing=='table'"
+              :concepts="lan.concepts"
+              :relations="lan.relations"
+              :categories="lan.categories"
+              :statements="lan.statements"
+              :actions="lan.actions"
+              :conditions="lan.conditions"
+            />
+            <TextView 
+              v-if="lan.showing=='text'"
+              :concepts="lan.concepts"
+              :relations="lan.relations"
+              :categories="lan.categories"
+              :contents="lan.contents"
+            />
+            <QueryView 
+              v-if="lan.showing=='query'"
+              :concepts="lan.concepts"
+              :relations="lan.relations"
+              :categories="lan.categories"
+              :statements="lan.statements"
+              :actions="lan.actions"
+              :conditions="lan.conditions"
+              :objectType="lan.objectType"
+              :contentType="lan.contentType"
+            />
+            <FunctionsView 
+            v-if="lan.showing=='functions'"
             :concepts="lan.concepts"
             :relations="lan.relations"
             :categories="lan.categories"
             :statements="lan.statements"
             :actions="lan.actions"
             :conditions="lan.conditions"
-          />
-          <TextView 
-            v-if="lan.showing=='text'"
-            :concepts="lan.concepts"
-            :relations="lan.relations"
-            :categories="lan.categories"
-            :contents="lan.contents"
-          />
-          <QueryView 
-            v-if="lan.showing=='query'"
-            :concepts="lan.concepts"
-            :relations="lan.relations"
-            :categories="lan.categories"
-            :statements="lan.statements"
-            :actions="lan.actions"
-            :conditions="lan.conditions"
-            :objectType="lan.objectType"
-            :contentType="lan.contentType"
-          />
-          <FunctionsView 
-          v-if="lan.showing=='functions'"
-          :concepts="lan.concepts"
-          :relations="lan.relations"
-          :categories="lan.categories"
-          :statements="lan.statements"
-          :actions="lan.actions"
-          :conditions="lan.conditions"
-          />
+            />
+          </div>
         </div>
         <div id="rightsidebar" class="pa-2 d-flex justify-center flex-column">
           <v-text-field>
@@ -254,11 +289,59 @@ export default {
   data: () => ({
     //Left Sidebar Variables
     folderStructure: null,
-    showFolderStructure: false,
+    showFolderStructure: true,
 
     lan: null,
+    tabs: [],
+    file: null,
+
+    clickMenu: {
+      opened: false,
+      x: 0,
+      y: 0,
+      node: null,
+    },
   }),
   methods: {
+    scrollHorizontal(event) {
+      const scrollAmount = event.deltaY * 3;
+      document.getElementById('tabs-inner').scrollLeft += scrollAmount;
+      event.preventDefault();
+    },
+    removeTab(i) {
+      this.tabs.splice(i, 1)
+    },
+    async createFile() {
+      const message = await new Promise(resolve => {
+          window.electronAPI.createFile(this.file)
+          window.electronAPI.response('create-file-response', resolve)
+      });
+      this.file = message
+      this.tabs.push(this.file)
+      this.tabs = [...new Set(this.tabs)];
+      this.updateFolderStructure()
+
+      this.$nextTick(()=>{
+        const tabsInner = document.getElementById('tabs-inner');
+        tabsInner.scrollLeft = tabsInner.scrollWidth - tabsInner.clientWidth;
+      })
+    },
+    openFile(file) {
+      if (this.file != file) {
+        this.file = file
+        this.tabs.push(this.file)
+        this.tabs = [...new Set(this.tabs)]
+
+        this.$nextTick(()=>{
+          const tabsInner = document.getElementById('tabs-inner');
+          tabsInner.scrollLeft = tabsInner.scrollWidth - tabsInner.clientWidth;
+        })
+      }
+      else {
+        this.file = this.lan.location + '/' + this.lan.name
+        //this.tabs = this.tabs.filter(tab => tab!=file)
+      }
+    },
     async updateFolderStructure() {
       const folderStructure = await new Promise(resolve => {
         window.electronAPI.getFolderStructure()
@@ -291,10 +374,6 @@ export default {
     moveFile(origin, destiny) {
         window.electronAPI.moveFileRequest(origin, destiny)
         setTimeout(()=>{this.updateFolderStructure()}, 100)
-    },
-
-    openFile(file) {
-      console.log(file)
     },
 
     setShowing(showing) {
@@ -462,6 +541,9 @@ export default {
       this.lan.contents = contents
       this.saveData()
     },
+    fileName(path) {
+      return path.split('/').slice(-1)[0]
+    },
     createObject(name, object, content) {
       if (object==0) {
         let category = new Category()
@@ -521,7 +603,58 @@ export default {
 
         EventBus.$emit('setQuery', action)
       }
-    }
+    },
+    nodeMouseDown(event) {
+      this.clickMenu.opened = true
+      this.clickMenu.x = event.clientX
+      this.clickMenu.y = event.clientY - 40
+      this.clickMenu.node = event.target
+    },
+    //Make node contenteditable
+    renameFile() {
+        var target = this.clickMenu.node
+        target.setAttribute('contenteditable', 'true')
+        const range = document.createRange();
+        range.selectNodeContents(target);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+    },
+    hideContextMenu() {
+        this.clickMenu.opened = false
+    },
+    //Remove node
+    removeNodeFile() {
+      this.clickMenu.opened = false
+      let target = this.clickMenu.node
+
+      window.electronAPI.requestFileDeletion(target.id)
+              
+      if (this.file == target.id) {
+          this.file = ''  
+      }
+      this.tabs = this.tabs.filter(file => file!=target.id)
+
+      function removeNodeFromTree(tree, nodeId) {
+          for (let i = 0; i < tree.length; i++) {
+              const node = tree[i];
+
+              if (node.id === nodeId) {
+                tree.splice(i, 1);
+                return true;
+              }
+
+              if (node.children) {
+                if (removeNodeFromTree(node.children, nodeId)) {
+                    return true;
+                }
+              }
+          }
+
+          return false;
+      }
+      removeNodeFromTree(this.folderStructure, target.id)
+    },
   },
   watch: {
     showing: 'saveData',
@@ -557,6 +690,7 @@ export default {
       lan[key] = data[key];
     }
 
+    this.file = data.location+'/'+data.name
     this.lan = lan
     this.loaded = true;
 
@@ -581,13 +715,16 @@ export default {
 
     //TextView Events
     EventBus.$on('updateContents', this.updateContents)
+
+    //TreeView Events
+    EventBus.$on('nodeMouseDown', this.nodeMouseDown)
   }
 };
 </script>
 
 <style>
   #titlebar {
-    border-bottom: 1px solid #ccc;
+    background: #222;
     height: 30px;
     display: flex;
     justify-content: center;
@@ -611,29 +748,27 @@ export default {
     overflow: hidden;
   }
   #leftsidebar {
-    background: #f6f6f6;
+    background: #161616;
     height: 100%;
     width: 200px;
     display: flex;
-    transition: transform .2s ease-in-out;
+    justify-content: flex-end;
   }
   #leftsidebar.hideFolders {
-    transform: translateX(-170px);
-    flex-direction: row-reverse;
+    width: 30px;
+    /*flex-direction: row-reverse;*/
   }
-  #leftsidebar.hideFolders #folderStructure {
-    display: none !important;
+  #.hideFolders {
   }
-
   #menu {
     width: 30px;
     height: 100%;
-    border-left: 1px solid #eee;
-    border-right: 1px solid #eee;
+    border-left: 1px solid #161616;
+    border-right: 1px solid #161616;
     gap: 5px;
   }
   #treeview {
-    height: calc(100% - 38px);
+    height: 100%;
     overflow: auto;
   }
   #treeview::-webkit-scrollbar {
@@ -649,15 +784,22 @@ export default {
   }
   #contents {
     height: 100%;
-    flex: 1;
+    width: calc(100% - 400px);
     overflow: hidden;
+  }
+  #leftsidebar.hideFolders ~ #contents {
+    width: calc(100% - 230px);
+  }
+  #contents-inner {
+    width: 100%;
     position: relative;
+    overflow: hidden;
   }
   #rightsidebar {
-    background: #f6f6f6;
+    background: #161616;
     height: 100%;
     width: 200px;
-    border-left: 1px solid #eee;
+    border-left: 1px solid #161616;
   }
 
   .inline-concept {
@@ -668,7 +810,62 @@ export default {
     text-decoration-color: var(--v-primary-base) !important;
     text-decoration : underline;
   }
-
+  #tabs {
+    width: 100%;
+    height: 40px;
+    overflow: hidden;;
+  }
+  #tabs-inner {
+    width: fit-content !important;
+    overflow-x: scroll;
+    gap: 10px;
+    scroll-behavior: smooth;
+    justify-content: center;
+    align-items: flex-end;
+  }
+  .tab, .active-tab {
+    width: fit-content !important;
+    align-items: center;
+    height: 30px;
+    padding-left: 5px;
+    padding-right: 5px;
+    white-space: nowrap;
+    display: inline-flex;
+    user-select: none;
+    cursor: default;
+    border: 1px solid transparent;
+  }
+  .active-tab {
+    border-color: var(--v-error-base);
+  }
+  #node-click-menu {
+    position: absolute;
+    border: 1px solid rgb(87, 87, 87);
+    width: fit-content;
+    min-height: 48px;
+    border-radius: 5px;
+    z-index: 101;
+    background: rgba(45, 45, 45);
+    height: fit-content;
+    padding: 3px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    outline: none;
+  }
+  .node-menu-item {
+      font-size: 14px;
+      min-width: 120px;
+      display: flex;
+      padding-left: 10px;
+      color: #B9B9B9;
+      justify-content: flex-start;
+      align-items: center;
+      border-radius: 3px;
+  }
+  .node-menu-item:hover {
+      background: rgba(98, 141, 208, .7);
+  }
   /*
   ::-webkit-scrollbar {
     display: none;
