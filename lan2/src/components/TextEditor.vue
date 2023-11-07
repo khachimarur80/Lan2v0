@@ -184,6 +184,7 @@ class Line {
   constructor() {
     this.contents = ''
     this.type = 'body'
+    this.divisions = []
   }
 }
 

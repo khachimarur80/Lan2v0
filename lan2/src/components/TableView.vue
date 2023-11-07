@@ -3,7 +3,7 @@
     <div id="table">
       <table>
         <tr v-for="(row, i) in contents" :key="i">
-          <td v-for="(cell, j) in row" :key="j" @mouseup="split(i, j)">{{ cell }}</td>
+          <td v-for="(cell, j) in splitLine(row)" :key="j" @mouseup="split(row)">{{ cell }}</td>
         </tr>
       </table>
     </div>
@@ -39,7 +39,7 @@
     },
 
     methods: {
-      split(i, j) {
+      split(line) {
         let selection = window.getSelection();
         let range = selection.getRangeAt(0);
         let selectedText = range.toString();
@@ -48,10 +48,8 @@
           const startPosition = range.startOffset;
           const endPosition = startPosition + selectedText.length;
 
-          let result = this.contents[i].slice(0,j).concat(Array.from([this.contents[i][j].slice(0, startPosition), this.contents[i][j].slice(startPosition, endPosition), this.contents[i][j].slice(endPosition)]), this.contents[i].slice(j+1,this.contents[i].length))
-          result = result.filter(cell => !!cell)
-
-          Vue.set(this.contents, i, result)
+          line.divisions.push(startPosition)
+          line.divisions.push(endPosition)
         }
 
         selection.removeAllRanges();
@@ -61,6 +59,27 @@
       },
       deleteItem(item) {
         EventBus.$emit('deleteItem', item)
+      },
+      splitLine(line) {
+        if (line.divisions.length === 0) {
+          return [line.contents]
+        }
+
+        const result = [];
+        let start = 0;
+
+        for (const index of line.divisions) {
+            if (start < index) {
+                result.push(line.contents.slice(start, index));
+            }
+            start = index;
+        }
+
+        if (start < line.contents.length) {
+            result.push(line.contents.slice(start));
+        }
+
+        return result;
       }
     },
 
@@ -107,7 +126,7 @@
     created() {
       EventBus.$on('setQuery', this.setQuery)
 
-      this.contents = this.lines.map(line => line.contents)
+      this.contents = this.lines
     }
   }
 </script>
