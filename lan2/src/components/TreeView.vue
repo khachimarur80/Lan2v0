@@ -98,11 +98,17 @@
                     }
             },
             openFile(node) {
-                EventBus.$emit('fileopened', node.id);
-                if (document.querySelector('.active-node')) {
-                    document.querySelector('.active-node').classList.remove('active-node')
+                if (document.querySelector('.active-node')!=event.target.parentElement.parentElement) {
+                    EventBus.$emit('fileopened', node.id);
+                    if (document.querySelector('.active-node')) {
+                        document.querySelector('.active-node').classList.remove('active-node')
+                    }
+                    event.target.parentElement.parentElement.classList.add('active-node')
                 }
-                event.target.parentElement.parentElement.classList.add('active-node')
+                else {
+                    document.querySelector('.active-node').classList.remove('active-node')
+                    EventBus.$emit('fileopened', node.id);
+                }
             },
             dragStartNode(event) {
                 event.target.setAttribute('data-dragging', true)
@@ -208,7 +214,7 @@
     right: 1px;
     height: 24px;
     left: 1px;
-    border-radius: 3px;
+    /*border-radius: 3px;*/
     z-index: -1;
     transition: background ease-in-out 0.1s;
 }
@@ -235,7 +241,7 @@
     padding: 1px;
     padding-left: 5px;
     padding-right: 5px;
-    border-radius: 3px;
+    /*border-radius: 3px;*/
     flex: 1;
     height: 24px;
 }
@@ -249,7 +255,7 @@
     right: 0px;
     height: 26px;
     left: 0px;
-    border-radius: 3px;
+    /*border-radius: 3px;*/
     z-index: -1;
     border: 1px solid var(--v-error-base);
 }
@@ -260,7 +266,7 @@
     right: 1px;
     height: 24px;
     left: 1px;
-    border-radius: 3px;
+    /*border-radius: 3px;*/
     z-index: -1;
     background: #363636;
 }
@@ -271,7 +277,7 @@
     right: 0px;
     height: 26px;
     left: 0px;
-    border-radius: 3px;
+    /*border-radius: 3px;*/
     z-index: -1;
     border: 1px solid var(--v-error-base);
 }

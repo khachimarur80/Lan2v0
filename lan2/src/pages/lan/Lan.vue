@@ -48,12 +48,12 @@
                 mdi-database-search
               </v-icon>
             </v-btn>
-            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='table' ? 'error' : ''" @click="setShowing('table')" disabled>
+            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='table' ? 'error' : ''" @click="setShowing('table')">
               <v-icon>
                 mdi-table
               </v-icon>
             </v-btn>
-            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='function' ? 'error' : ''" @click="setShowing('function')" disabled>
+            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='function' ? 'error' : ''" @click="setShowing('function')">
               <v-icon>
                 mdi-function-variant
               </v-icon>
@@ -62,6 +62,12 @@
             <v-divider style="width: 20px" class="my-1">
             </v-divider>
 
+            <v-spacer></v-spacer>
+            <v-btn icon dense x-small class="mx-2 mb-2">
+              <v-icon>
+                mdi-cog-outline
+              </v-icon>
+            </v-btn>
           </div>
         </div>
         <div id="contents" @wheel="zoomBoard">
@@ -103,9 +109,7 @@
               :concepts="lan.concepts"
               :relations="lan.relations"
               :categories="lan.categories"
-              :statements="lan.statements"
-              :actions="lan.actions"
-              :conditions="lan.conditions"
+              :lines="lan.contents"
             />
             <TextView 
               v-if="lan.showing=='text'"
@@ -336,9 +340,14 @@ export default {
           const tabsInner = document.getElementById('tabs-inner');
           tabsInner.scrollLeft = tabsInner.scrollWidth - tabsInner.clientWidth;
         })
+
+        if (document.getElementById(file)) {
+          document.getElementById(file).classList.add('active-node')
+        }
       }
       else {
         this.file = this.lan.location + '/' + this.lan.name
+        document.querySelector('.active-node').classList.remove('active-node')
         //this.tabs = this.tabs.filter(tab => tab!=file)
       }
     },
@@ -489,8 +498,8 @@ export default {
       })
     },
     saveData() {
+      // eslint-disable-next-line
       const data = this.lan
-      console.log(data)
       //window.electronAPI.saveData(data)
     },
     addItem(item) {

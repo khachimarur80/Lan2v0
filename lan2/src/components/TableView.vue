@@ -1,231 +1,26 @@
 <template>
   <v-container>
-    <div id="query">
-      <div id="filter">
-        <v-card width="100%" height="100%" flat class="pa-3">
-          <div>
-            <v-autocomplete
-              v-model="select"
-              :loading="loading"
-              :items="objects"
-              item-value="id"
-              cache-items
-              flat
-              hide-no-data
-              hide-details
-              dense
-              label="Search for object"
-              outlined
-              class="mt-3"
-              item-text="name"
-              @input="selectItem">
-              <template v-slot:item="{ item }">
-                {{ item.name }}
-              </template>
-            </v-autocomplete>
-            <v-combobox
-              :items="categories"
-              item-value="id"
-              item-text="name"
-              label="Tags"
-              chips
-              multiple
-              outlined
-              dense
-              class="mt-3">
-            </v-combobox>
-            <div class="d-flex align-center justify-center mt-n3">
-              <v-btn-toggle v-model="objectType" dense>
-                <v-btn>
-                  <v-icon color="red">mdi-pound</v-icon>
-                </v-btn>
-
-                <v-btn>
-                  <v-icon color="green">mdi-code-brackets</v-icon>
-                </v-btn>
-
-                <v-btn>
-                  <v-icon color="blue">mdi-transit-connection-horizontal</v-icon>
-                </v-btn>
-
-                <v-btn>
-                  <v-icon color="yellow">
-                    mdi-code-tags
-                  </v-icon>
-                </v-btn>
-
-                <v-btn>
-                  <v-icon color="purple">
-                    mdi-source-fork
-                  </v-icon>
-                </v-btn>
-
-                <v-btn>
-                  <v-icon color="orange">
-                    mdi-skew-more
-                  </v-icon>
-                </v-btn>
-              </v-btn-toggle>
-            </div>
-            <div class="d-flex align-center justify-center mt-3">
-              <v-btn-toggle v-model="contentType" dense v-if="objectType==1">
-                <v-btn>
-                  <v-icon>mdi-file</v-icon>
-                </v-btn>
-
-                <v-btn>
-                  <v-icon>mdi-image</v-icon>
-                </v-btn>
-
-                <v-btn>
-                  <v-icon>mdi-link</v-icon>
-                </v-btn>
-              </v-btn-toggle>
-            </div>
-          </div>
-          <v-card-text>
-            <div v-for="item in filtered" :key="item.id" @click="setQuery(item)"  :style="{ color: getTextColor(item) }" class="d-flex align-center justify-space-between">
-              <div class="text-body-2" v-if="item.name">
-                {{ item.name }}
-              </div>
-              <div class="text-body-2" v-else>
-                #{{ item.id }}
-              </div>
-              <v-btn icon dense x-small color="orange" @mousedown.stop @click="deleteItem(item)">
-                <v-icon>
-                  mdi-close
-                </v-icon>
-              </v-btn>
-            </div>
-          </v-card-text>
-        </v-card>
-      </div>
-      <div id="data">
-        <v-card width="100%" height="100%" flat class="pa-3 overflow-auto">
-          <v-card-title>
-            <div class="text-h4" :style="{ color: getTextColor(selectedQuery) }">
-              {{ selectedQuery.name }}
-            </div>
-          </v-card-title>
-          <v-card-text v-if="selectedQuery.objectType=='concept'">
-            <div class="text-body-1">
-              Id: {{ selectedQuery.id }}
-            </div>
-            <div class="text-body-1">
-              Data: {{ selectedQuery.data }}
-            </div>
-            <div class="text-body-1" v-if="selectedQuery.data=='link'">
-              <div class="text-body-1">Contents: </div><br>
-              <iframe
-                :src="selectedQuery.contents"
-                width="400"
-                height="400"
-                frameborder="0"
-                seamless
-              ></iframe>
-            </div>
-            <div class="text-body-1" v-if="selectedQuery.data=='file'">
-              <div class="text-body-1">Contents: </div><br>
-              <div class="markdown" v-html="compiledMarkdown(selectedQuery.contents)"></div><br>
-            </div>
-            <div v-if="selectedQuery.data=='image'">
-              <div class="text-body-1">Contents: </div><br>
-              <v-dialog v-model="fullImage" fullscreen hide-overlay>
-                <template v-slot:activator="{ on, attrs }">
-                  <v-img v-bind="attrs" v-on="on" @click="fullImage=true" :src="'safe-protocol://' + selectedQuery.contents" contain ></v-img>
-                </template>
-                <div style="height: 100vh; width: 100h; background: #191919;" class="pa-5">
-                  <v-img @click="fullImage=false" :src="'safe-protocol://' + selectedQuery.contents" contain max-height="100%" max-width="100%"></v-img>
-                </div>
-              </v-dialog>
-            </div>
-            <div class="text-body-1">
-              Relations: {{ selectedQuery.relations }}
-            </div>
-            <div class="text-body-1">
-              Categories: {{ selectedQuery.categories }}
-            </div>
-          </v-card-text>
-          <v-card-text v-if="selectedQuery.objectType=='category'">
-              <div class="text-body-1">
-                Id: {{ selectedQuery.id }}
-              </div>
-              <div class="text-body-1">
-                Objects: {{ selectedQuery.objects }}
-              </div>
-          </v-card-text>
-          <v-card-text v-if="selectedQuery.objectType=='relation'">
-              <div class="text-body-1">
-                Id: {{ selectedQuery.id }}
-              </div>
-              <div class="text-body-1">
-                Subject: {{ selectedQuery.subject }}
-              </div>
-              <div class="text-body-1">
-                Object: {{ selectedQuery.object }}
-              </div>
-              <div class="text-body-1">
-                Categories: {{ selectedQuery.categories }}
-              </div>
-          </v-card-text>
-          <v-card-text v-if="selectedQuery.objectType=='statement'">
-              <div class="text-body-1">
-                Id: {{ selectedQuery.id }}
-              </div>
-              <div class="text-body-1">
-                Type: {{ selectedQuery.type }}
-              </div>
-              <div class="text-body-1">
-                Items: 
-                <ul v-for="(item, i) in selectedQuery.items" :key="i">
-                  {{ item[0] }}
-                </ul>
-              </div>
-          </v-card-text>
-          <v-card-text v-if="selectedQuery.objectType=='condition'">
-              <div class="text-body-1">
-                Id: {{ selectedQuery.id }}
-              </div>
-              <div class="text-body-1">
-                Items:
-                <ul v-for="(item, i) in selectedQuery.items" :key="i">
-                  <span v-if="!item[1]">{{ item[0].name }}</span>
-                  <span v-else>{{ item[0] }}</span>
-                </ul>
-              </div>
-          </v-card-text>
-          <v-card-text v-if="selectedQuery.objectType=='action'">
-              <div class="text-body-1">
-                Id: {{ selectedQuery.id }}
-              </div>
-              <div class="text-body-1">
-                <!--Table-->
-                Condition: {{ selectedQuery.condition }}
-              </div>
-          </v-card-text>
-        </v-card>
-      </div>
+    <div id="table">
+      <table>
+        <tr v-for="(row, i) in contents" :key="i">
+          <td v-for="(cell, j) in row" :key="j" @mouseup="split(i, j)">{{ cell }}</td>
+        </tr>
+      </table>
     </div>
   </v-container>
 </template>
 
 <script>
   import EventBus from '@/event-bus'
-  import colors from 'vuetify/lib/util/colors';
-  import { marked } from 'marked';
+  // eslint-disable-next-line
+  import Vue from 'vue'
 
   export default {
     name: 'QueryView',
 
     data: () => ({
-      selectedQuery: [],
-      selectingArea: null,
-      loading: false,
-      select: null,
-
-      objectType: null,
-      contentType: null,
-      fullImage: false,
+      contents: [
+      ]
     }),
 
     props: {
@@ -238,78 +33,28 @@
       categories: {
           required: true,
       },
-      actions: {
+      lines: {
           required: true,
       },
-      conditions: {
-          required: true,
-      },
-      statements: {
-          required: true,
-      }
     },
 
     methods: {
-      compiledMarkdown(md) {
-        if (md) {
-          return marked.parse(md);
-        }
-        return md
-      },
-      getTextColor(item) {
-        if (item) {
-          if (item.objectType == 'category') {
-            return colors.red.base;
-          }
-          else if (item.objectType == 'relation') {
-            return colors.blue.base;
-          }
-          else if (item.objectType == 'statement') {
-            return colors.yellow.base;
-          }
-          else if (item.objectType == 'condition') {
-            return colors.purple.base;
-          }
-          else if (item.objectType == 'action') {
-            return colors.orange.base;
-          }
-          else {
-            return colors.green.base;
-          }
-        }
-        return 'white'
-      },
-      getObjectById(id) {
-        for(let i=0; i<this.concepts.length; i++) {
-          if (this.concepts[i].id==id) {
-            return this.concepts[i]
-          }
-        }
-        for(let i=0; i<this.statements.length; i++) {
-          if (this.statements[i].id==id) {
-            return this.statements[i]
-          }
-        }
-        for(let i=0; i<this.actions.length; i++) {
-          if (this.actions[i].id==id) {
-            return this.actions[i]
-          }
-        }
-        for(let i=0; i<this.conditions.length; i++) {
-          if (this.conditions[i].id==id) {
-            return this.conditions[i]
-          }
-        }
-        for(let i=0; i<this.relations.length; i++) {
-          if (this.relations[i].id==id) {
-            return this.relations[i]
-          }
-        }
-      },
+      split(i, j) {
+        let selection = window.getSelection();
+        let range = selection.getRangeAt(0);
+        let selectedText = range.toString();
 
-      selectItem() {
-        this.selectedQuery = this.getObjectById(this.select)
-        this.select = null
+        if (selectedText) {
+          const startPosition = range.startOffset;
+          const endPosition = startPosition + selectedText.length;
+
+          let result = this.contents[i].slice(0,j).concat(Array.from([this.contents[i][j].slice(0, startPosition), this.contents[i][j].slice(startPosition, endPosition), this.contents[i][j].slice(endPosition)]), this.contents[i].slice(j+1,this.contents[i].length))
+          result = result.filter(cell => !!cell)
+
+          Vue.set(this.contents, i, result)
+        }
+
+        selection.removeAllRanges();
       },
       setQuery(object) {
         this.selectedQuery = object
@@ -361,26 +106,33 @@
 
     created() {
       EventBus.$on('setQuery', this.setQuery)
+
+      this.contents = this.lines.map(line => line.contents)
     }
   }
 </script>
 
 <style scoped>
-  #query {
-    height: calc(100vh - 80px);
-    width: 100h;
-    cursor: crosshair;
-    position: relative;
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
+  }
+  table, td {
+    text-align: center;
+    vertical-align: middle;
+    padding: 5px;
+    border: 1px solid #333;
+  }
+  tr {
     display: flex;
-    gap: 20px;
+  }
+  td {
+    flex: 1;
+  }
+  #table {
+    height: 100%;
+    width: 100h;
     padding: 20px;
-  }
-  #filter {
-    width: 50%;
-    height: 100%;
-  }
-  #data {
-    width: 50%;
-    height: 100%;
   }
 </style>

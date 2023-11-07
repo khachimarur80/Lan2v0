@@ -631,6 +631,7 @@ export default {
 </script>
 
 <style scoped>
+  
 #text {
   height: 100%;
   width: 100h;
