@@ -801,7 +801,7 @@ export default {
   }
   #contents-inner {
     width: 100%;
-    position: relative;
+    height: 100%;
     overflow: hidden;
   }
   #rightsidebar {
