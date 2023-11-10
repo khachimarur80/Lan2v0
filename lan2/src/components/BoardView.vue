@@ -624,14 +624,11 @@ line {
 
 #board {
   flex: 1;
-  height: calc(100vh - 30px);
+  height: calc(100% - 40px);
   cursor: crosshair;
-  position: absolute;
   width: 100%;
   z-index: 2;
-  /*background-size: 40px 40px;
-  background-image: radial-gradient(circle, #000000 1px, rgba(0, 0, 0, 0) 1px);
-  background-repeat: repeat;*/
+  position: relative;
 }
 ::-webkit-scrollbar {
   display: none;

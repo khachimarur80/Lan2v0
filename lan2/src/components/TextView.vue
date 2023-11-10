@@ -1,13 +1,17 @@
 <template>
   <v-container>
     <TextEditor
+      v-if="isFile"
       :concepts="concepts"
       :relations="relations"
       :categories="categories"
       :contents="contents"
       @addItem="addItem"
-      @updateContents="updateContents"
+      @saveContents="saveContents"
     ></TextEditor>
+    <div class="notFile" v-else>
+      <span class="text-h5">Directory : {{file}}</span>
+    </div>
   </v-container>
 </template>
 
@@ -16,10 +20,22 @@
 import EventBus from '@/event-bus'
 import TextEditor from './TextEditor';
 
+
+// eslint-disable-next-line
+class Line {
+  constructor() {
+    this.contents = ''
+    this.type = 'body'
+    this.divisions = []
+  }
+}
+
 export default {
   name: 'TextView',
 
   data: () => ({
+    contents: [],
+    isFile: false,
   }),
 
   components: {
@@ -36,7 +52,7 @@ export default {
     categories: {
         required: true,
     },
-    contents: {
+    file: {
       required: true,
     }
   },
@@ -45,16 +61,43 @@ export default {
     addItem(concept) {
       EventBus.$emit('addItem', concept)
     },
-    updateContents(contents) {
-      EventBus.$emit('updateContents', contents)
+    saveContents(contents) {
+      let parsedContent = contents.map(obj => obj.contents).join('\n')
+      console.log(parsedContent)
+      window.electronAPI.requestSaveFile(this.file, parsedContent)
+    },
+    async updateContents() {
+      const message = await new Promise(resolve => {
+        window.electronAPI.requestFileData(this.file)
+        window.electronAPI.response('file-data-response', resolve)
+      });
+      if (typeof message === 'string') {
+        this.isFile = true
+        let lines = message.split('\n')
+        for (let i=0; i<lines.length; i++) {
+          let line = new Line()
+          line.contents = lines[i]
+          this.contents.push(line)
+        }
+      }
     }
   },
 
   computed: {
   },
 
-  created() {
-    this.lines = this.contents
+  async created() {
+    const message = await new Promise(resolve => {
+      window.electronAPI.requestFileData(this.file)
+      window.electronAPI.response('file-data-response', resolve)
+    });
+    if (typeof message === 'string') {
+      this.isFile = true
+    }
+  },
+
+  watch : {
+    file : 'updateContents'
   },
 
   mounted() {
@@ -198,5 +241,12 @@ export default {
 .h6 {
   font-size: 23px;
   font-weight: 500;
+}
+.notFile {
+  height: calc(100vh - 40px - 30px - 20px);
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

@@ -2,7 +2,7 @@
   <div id="text">
     <v-card width="100%" height="100%"  class="pa-1 pt-3 text-content" style="border-radius: 0px !important;" elevation="0">
       <div 
-        style="height: 100%; width: 100%; outline: none; color: white" 
+        style="height: 100%; width: 100%; outline: none; color: transparent;" 
         @click="lineClick"
         @keyup="lineKeyup" 
         @keydown="lineKeydown"
@@ -312,7 +312,7 @@ export default {
 
         this.lines[this.currentLine].contents = currentLine.innerText
 
-        this.$emit('updateContents', this.lines)
+        this.$emit('saveContents', this.lines)
       }
     },
     lineKeydown(event) {
@@ -489,7 +489,7 @@ export default {
           }
         }
 
-        this.$emit('updateContents', this.lines)
+        this.$emit('saveContents', this.lines)
       }
     },
     lineClick(event) {
@@ -505,7 +505,7 @@ export default {
 
         this.currentLine = 0
 
-        this.$emit('updateContents', this.lines)
+        this.$emit('saveContents', this.lines)
       }
       else if (event.target.classList.contains('inline-concept')) {
         if (event.target.classList.contains('highlight-concept')) {
@@ -705,6 +705,7 @@ export default {
   user-select: none;
   display: flex;
   align-items: center;
+  color: #fff;
 }
 .line-contents {
   flex: 1;

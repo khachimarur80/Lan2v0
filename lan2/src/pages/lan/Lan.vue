@@ -109,14 +109,14 @@
               :concepts="lan.concepts"
               :relations="lan.relations"
               :categories="lan.categories"
-              :lines="lan.contents"
+              :file="file"
             />
             <TextView 
               v-if="lan.showing=='text'"
               :concepts="lan.concepts"
               :relations="lan.relations"
               :categories="lan.categories"
-              :contents="lan.contents"
+              :file="file"
             />
             <QueryView 
               v-if="lan.showing=='query'"
@@ -500,7 +500,7 @@ export default {
     saveData() {
       // eslint-disable-next-line
       const data = this.lan
-      //window.electronAPI.saveData(data)
+      window.electronAPI.saveData(data)
     },
     addItem(item) {
       if (item.objectType == 'category') {
@@ -547,7 +547,7 @@ export default {
       }
     },
     updateContents(contents) {
-      this.lan.contents = contents
+      window.electronAPI.requestSaveFile(this.file, contents)
       this.saveData()
     },
     fileName(path) {
@@ -875,262 +875,4 @@ export default {
   .node-menu-item:hover {
       background: rgba(98, 141, 208, .7);
   }
-  /*
-  ::-webkit-scrollbar {
-    display: none;
-  }
-  line {
-    stroke-width: 3px !important;
-    stroke: var(--v-primary-base);
-  }
-  #contents {
-    display: flex;
-    height: calc(100vh - 64px);
-    width: 100h;
-    flex-direction: column;
-    align-items: center;
-    overflow: hidden;
-  }
-  #board {
-    flex: 1;
-    height: calc(100vh - 80px);
-    cursor: crosshair;
-    position: relative;
-    width: 100%;
-    top: 50%;
-    left: 50%;
-    transform-origin: top left;
-  }
-  #functions {
-    flex: 1;
-    height: calc(100vh - 80px);
-    cursor: crosshair;
-    position: relative;
-    width: 100%;
-  }
-  .condition {
-    position: absolute;
-    border-radius: 5px;
-    padding: 5px;
-    cursor: grab;
-    transform: translate(-50%, -50%);
-    border: 1px solid purple;
-    min-height: 26px;
-    width: 80px;
-    border-radius: 5px;
-  }
-  .condition-inner {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 3px;
-    position: relative;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .condition input {
-    outline: none;
-    border-radius: 5px;
-    width: 60px;
-    height: 26px;
-    border: 1px solid purple;
-    text-align: center;
-    color: white;
-    margin-left: 50%;
-    transform: translateX(-50%);
-  }
-  .action {
-    position: absolute;
-    border-radius: 5px;
-    padding: 5px;
-    cursor: grab;
-    transform: translate(-50%, -50%);
-    border: 1px solid orange;
-    min-height: 26px;
-    border-radius: 5px;
-  }
-  .action-inner {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 3px;
-    position: relative;
-    flex-direction: column;
-    gap: 5px;
-  }
-  .action input {
-    outline: none;
-    border-radius: 5px;
-    width: 80px;
-    height: 26px;
-    border: 1px solid orange;
-    text-align: center;
-    color: white;
-  }
-
-  .statement {
-    position: absolute;
-    border-radius: 5px;
-    padding: 5px;
-    cursor: grab;
-    transform: translate(-50%, -50%);
-    border: 1px solid yellow;
-  }
-  .statement-inner {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 3px;
-    gap: 10px;
-    position: relative;
-  }
-  .statement input {
-    outline: none;
-    border-radius: 5px;
-    min-width: 60px;
-    background: #191919;
-    color: white;
-    padding-left: 5px;
-  }
-
-  .statement-inner::before {
-    content: "";
-    width: 80%;
-    height: 1px;
-    position: absolute;
-    background: #fff;
-    z-index: -1;
-  }
-
-  .node {
-    height: 8px;
-    width: 8px;
-    border-radius: 50%;
-    position: absolute;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .node.center {
-    top: 50%;
-    right: 50%;
-    transform: translate(50%, -50%);
-  }
-  .node.left {
-    top: 50%;
-    transform: translate(50%, -50%);
-    left: 0px;
-  }
-  .node.right {
-    top: 50%;
-    transform: translate(-50%, -50%);
-    right: 0px;
-  }
-  .node.up {
-    top: 0px;
-    left: 50%;
-    transform: translate(-50%, 50%);
-  }
-  .node.down {
-    bottom: 0px;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
-  .statement-node {
-    top: 50%;
-    transform: translate(-50%, -50%);
-    right: -8px;
-    background: yellow;
-    cursor: pointer;
-  }
-  .statement-node .node-inner {
-    background: black;
-  }
-  .condition-node {
-    top: 50%;
-    transform: translate(50%, -50%);
-    left: -9px;
-    background: yellow;
-    cursor: pointer;
-  }
-  .condition-node .node-inner {
-    background: black;
-  }
-  .condition .action-node {
-    top: 50%;
-    transform: translate(-50%, -50%);
-    right: -8px;
-    background: orange;
-    cursor: pointer;
-  }
-  .condition .action-node .node-inner {
-    background: black;
-  }
-  .action .action-node {
-    top: 50%;
-    transform: translate(50%, -50%);
-    left: -9px;
-    background: orange;
-    cursor: pointer;
-  }
-  .action .action-node .node-inner {
-    background: black;
-  }
-
-  .node:hover {
-    background: #fff;
-    cursor: pointer;
-  }
-  .node:hover .node-inner {
-    background: black;
-  }
-  .node-inner {
-    height: 6px;
-    width: 6px;
-    border-radius: 50%;
-  }
-  .relation-node .node-inner {
-    background: #ccc;
-  }
-  #generalSVG {
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    overflow: visible;
-  }
-  #generalFunctionsSVG {
-    position: absolute;
-    top: 0px;
-    left: 0px;
-  }
-  .rectangle {
-    background: rgba(255,0,0,.1);
-    outline: 1px dotted red;
-    position: absolute;
-  }
-
-  .statement-concept {
-    border: 1px solid var(--v-success-base) !important;
-  }
-  .statement-tag {
-    border: 1px solid var(--v-error-base) !important;
-  }
-  .statement-relation {
-    border: 1px solid var(--v-primary-base) !important;
-  }
-  .true {
-    box-shadow: 0px 0px 5px 2px hsl(114, 100%, 50%);
-  }
-  .false {
-    box-shadow: 0px 0px 5px 2px hsl(0, 100%, 50%);
-  }
-  .inline-concept {
-    color: var(--v-success-base);
-    cursor: pointer;
-  }
-  .highlight-concept {
-    text-decoration-color: var(--v-primary-base) !important;
-    text-decoration : underline;
-  }
-  */
 </style>

@@ -105,6 +105,22 @@ function generateTreeData(dirPath) {
   return readDirectoryRecursively(dirPath);
 }
 
+function handleRequestFileData(fileName) {
+  const filePath = fileName;
+
+  const stat = fs.statSync(filePath);
+  const isDirectory = stat.isDirectory();
+  console.log(fileName)
+  if (isDirectory) {
+    win.webContents.send('file-data-response', false);
+  }
+  else {
+    fs.readFile(filePath, 'utf-8', (err, fileContent) => { 
+      win.webContents.send('file-data-response', fileContent);
+    });
+  }
+}
+
 function createHomeWindow(devPath) {
   let win = new BrowserWindow({
     width: 700,
@@ -288,6 +304,16 @@ app.on('ready', async () => {
   // ----------------------------- Lan Window ------------------------------ //
   // ----------------------------------------------------------------------- //
 
+  ipcMain.on('request-file-data', (event, fileName) => {
+    console.log("File data requested!\n")
+    handleRequestFileData(fileName)
+  })
+
+  ipcMain.on('request-save-file', (event, fileName, fileData) => {
+    console.log("Saving file requested!\n")
+    fs.writeFile(fileName, fileData, ()=>{});
+  });
+  
   ipcMain.on('request-change-filename', (event, targetFile, value) => {
     console.log("Change filename requested!");
     console.log(targetFile);
