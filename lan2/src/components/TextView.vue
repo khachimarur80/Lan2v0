@@ -1,42 +1,28 @@
 <template>
   <v-container>
     <TextEditor
-      v-if="isFile"
+      v-if="file"
       :concepts="concepts"
       :relations="relations"
       :categories="categories"
-      :contents="contents"
-      @addItem="addItem"
+      :file="file"
+
       @saveContents="saveContents"
     ></TextEditor>
     <div class="notFile" v-else>
-      <span class="text-h5">Directory : {{file}}</span>
+      <v-icon x-large>
+        mdi-folder-outline
+      </v-icon>
     </div>
   </v-container>
 </template>
 
 <script>
 
-import EventBus from '@/event-bus'
 import TextEditor from './TextEditor';
-
-
-// eslint-disable-next-line
-class Line {
-  constructor() {
-    this.contents = ''
-    this.type = 'body'
-    this.divisions = []
-  }
-}
 
 export default {
   name: 'TextView',
-
-  data: () => ({
-    contents: [],
-    isFile: false,
-  }),
 
   components: {
     TextEditor
@@ -58,71 +44,18 @@ export default {
   },
 
   methods: {
-    addItem(concept) {
-      EventBus.$emit('addItem', concept)
+    saveContents() {
+      console.log(this.file)
+      let parsedContent = this.file.contents.map(obj => obj.contents).join('\n')
+      console.log(this.file)
+      window.electronAPI.requestSaveFile(this.file.path, parsedContent)
     },
-    saveContents(contents) {
-      let parsedContent = contents.map(obj => obj.contents).join('\n')
-      console.log(parsedContent)
-      window.electronAPI.requestSaveFile(this.file, parsedContent)
-    },
-    async updateContents() {
-      const message = await new Promise(resolve => {
-        window.electronAPI.requestFileData(this.file)
-        window.electronAPI.response('file-data-response', resolve)
-      });
-      if (typeof message === 'string') {
-        this.isFile = true
-        let lines = message.split('\n')
-        for (let i=0; i<lines.length; i++) {
-          let line = new Line()
-          line.contents = lines[i]
-          this.contents.push(line)
-        }
-      }
-    }
+    
   },
 
   computed: {
   },
 
-  async created() {
-    const message = await new Promise(resolve => {
-      window.electronAPI.requestFileData(this.file)
-      window.electronAPI.response('file-data-response', resolve)
-    });
-    if (typeof message === 'string') {
-      this.isFile = true
-    }
-  },
-
-  watch : {
-    file : 'updateContents'
-  },
-
-  mounted() {
-    const lineContents = this.$refs.lineContents;
-
-    if (lineContents) {
-      for (let i=0; i<lineContents.length; i++) {
-        let words = lineContents[i].textContent.split(' ')
-        words = Array.from(new Set(words)).filter(word => word.trim() !== '')
-        for (let j=0; j<words.length; j++) {
-          let concept = this.concepts.find(concept => concept.name==words[j].trim())
-          if (concept) {
-            let word = words[j].trim();
-            let regex = new RegExp(`\\b${word}\\b`, 'g');
-
-            lineContents[i].innerHTML = this.lines[i].contents.replace(regex, `<span contenteditable="false" class="inline-concept">${word}</span>`);
-
-            if (j==(words.length-1)) {
-              lineContents[i].innerHTML += '&nbsp;'
-            } 
-          }
-        }
-      }
-    }
-  },
 }
 </script>
 

@@ -9,7 +9,7 @@
         @dblclick="lineDoubleClick"  
         contenteditable 
         >
-        <div :class="['line', currentLine==i ? 'currentLine' : '',  blockType(line.type)]" v-for="(line, i) in lines" :key="i">
+        <div :class="['line', currentLine==i ? 'currentLine' : '',  blockType(line.type)]" v-for="(line, i) in file.contents" :key="file.name + i">
           <div class="references" contenteditable="false">
             <v-btn icon text color="amber" dense small>
               <v-icon>
@@ -80,6 +80,7 @@
 </template>
 
 <script>
+import EventBus from '@/event-bus'
 
 // eslint-disable-next-line
 function insertTextAtCaret(text) {
@@ -230,7 +231,6 @@ export default {
 
   data: () => ({
     selectedQuery: [],
-    lines: [],
     object: null,
     subject: null,
     relation: null,
@@ -249,7 +249,7 @@ export default {
     categories: {
         required: true,
     },
-    contents: {
+    file: {
       required: true,
     }
   },
@@ -275,7 +275,7 @@ export default {
           if (concept) {
             let word = words[j].trim();
             let regex = new RegExp(`\\b${word}\\b`, 'g');
-            lineContents[i].innerHTML = this.lines[i].contents.replace(regex, `<span contenteditable="false" class="inline-concept">${word}</span>`);
+            lineContents[i].innerHTML = this.file.contents[i].contents.replace(regex, `<span contenteditable="false" class="inline-concept">${word}</span>`);
           }
         }
       }
@@ -291,7 +291,7 @@ export default {
         relation.object = object.id
         relation.subject = subject.id
 
-        this.$emit('addItem', relation)
+        EventBus.$emit('addItem', relation)
       }
 
       this.creatingRelation = false
@@ -310,9 +310,9 @@ export default {
       else {
         let currentLine = document.querySelector('div[data-num="'+this.currentLine+'"]')
 
-        this.lines[this.currentLine].contents = currentLine.innerText
+        EventBus.$emit('updateLine', this.currentLine, currentLine.innerText)
 
-        this.$emit('saveContents', this.lines)
+        this.$emit('saveContents')
       }
     },
     lineKeydown(event) {
@@ -346,7 +346,8 @@ export default {
 
         if (startOffset === currentLine.innerText.length) {
           let newLine = new Line()
-          this.lines.splice(this.currentLine + 1, 0, newLine)
+          EventBus.$emit('appendLine', this.currentLine, newLine)
+          //this.file.contents.splice(this.currentLine + 1, 0, newLine)
 
           this.$nextTick(()=>{
             const newTarget = document.querySelector('div[data-num="'+(this.currentLine+1)+'"]')
@@ -367,13 +368,14 @@ export default {
           let oldLineText = startContainer.textContent.slice(0, startOffset)
           let newLineText = startContainer.textContent.slice(startOffset, startContainer.textContent.length)
 
-          this.lines[this.currentLine].contents = oldLineText
+          EventBus.$emit('updateLine', this.currentLine, oldLineText)
+
           currentLine.innerText = oldLineText
 
           let newLine = new Line()
           newLine.contents = newLineText
 
-          this.lines.splice(this.currentLine + 1, 0, newLine)
+          EventBus.$emit('appendLine', this.currentLine, newLine)
 
           this.$nextTick(()=>{
             const newLine = document.querySelector('div[data-num="'+(this.currentLine+1)+'"]')
@@ -395,7 +397,7 @@ export default {
         let range = sel.getRangeAt(0);
         let startOffset = range.startOffset;
 
-        if (this.lines.length>1) {
+        if (this.file.contents.length>1) {
             if (startOffset === 0) {
               event.preventDefault()
           
@@ -403,9 +405,10 @@ export default {
 
               let oldPos = newTarget.innerText.length
 
-              this.lines[this.currentLine-1].contents += this.lines[this.currentLine].contents
+              let newContents = this.file.contents[this.currentLine-1].contents + this.file.contents[this.currentLine].contents
+              EventBus.$emit('updateLine', this.currentLine-1, newContents)
 
-              newTarget.innerText += this.lines[this.currentLine].contents
+              newTarget.innerText += this.file.contents[this.currentLine].contents
 
               sel.removeAllRanges();
               const range = setCursorPosition(newTarget, document.createRange(), {
@@ -415,7 +418,7 @@ export default {
               range.collapse(true);
               sel.addRange(range);
 
-              this.lines.splice(this.currentLine, 1)
+              EventBus.$emit('removeLine', this.currentLine)
 
               this.currentLine -= 1
             } 
@@ -450,7 +453,7 @@ export default {
         event.preventDefault()
 
         let num = parseInt(currentLine.getAttribute('data-num'))
-        if (num<this.lines.length-1) {
+        if (num<this.file.contents.length-1) {
           this.currentLine += 1
 
           let target = document.querySelector('div[data-num="'+(num+1)+'"]')
@@ -473,7 +476,7 @@ export default {
       }
       else if (event.key === "#") {
         event.preventDefault()
-        let currentLine = this.lines[this.currentLine]
+        let currentLine = this.file.contents[this.currentLine]
         if (currentLine.type=='body') {
           currentLine.type = 'h1'
         }
@@ -489,14 +492,14 @@ export default {
           }
         }
 
-        this.$emit('saveContents', this.lines)
+        this.$emit('saveContents')
       }
     },
     lineClick(event) {
       event.preventDefault()
-      if (this.lines.length==0) {
+      if (this.file.contents.length==0) {
         let newLine = new Line()
-        this.lines.push(newLine)
+        EventBus.$emit('appendLine', 0, newLine)
 
         this.$nextTick(()=>{
           const newTarget = document.querySelector('div[data-num="0"]')
@@ -505,7 +508,7 @@ export default {
 
         this.currentLine = 0
 
-        this.$emit('saveContents', this.lines)
+        this.$emit('saveContents')
       }
       else if (event.target.classList.contains('inline-concept')) {
         if (event.target.classList.contains('highlight-concept')) {
@@ -591,18 +594,14 @@ export default {
           concept.x = circle*80*Math.cos(angle) + rect.width/2
           concept.y = circle*80*Math.sin(angle) + rect.height/2
 
-        this.$emit('addItem', concept)
+        EventBus.$emit('addItem', concept)
 
         this.parseConcepts(this.$refs.lineContents)
       }
-    }
+    },
   },
 
   computed: {
-  },
-
-  created() {
-    this.lines = this.contents
   },
 
   mounted() {
@@ -618,7 +617,7 @@ export default {
             let word = words[j].trim();
             let regex = new RegExp(`\\b${word}\\b`, 'g');
 
-            lineContents[i].innerHTML = this.lines[i].contents.replace(regex, `<span contenteditable="false" class="inline-concept">${word}</span>`);
+            lineContents[i].innerHTML = this.file.contents[i].contents.replace(regex, `<span contenteditable="false" class="inline-concept">${word}</span>`);
 
             if (j==(words.length-1)) {
               lineContents[i].innerHTML += '&nbsp;'

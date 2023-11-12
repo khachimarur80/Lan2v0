@@ -2,10 +2,10 @@
     <div class="treeview-container">
         <div class="tree-node main-node" v-if="vault.length>0">
             <div class="node-content">
-                <div class="node-content-text">
-                <div style="height: 5px; width: 20px;"></div>
-                <div class="node-file-name" :id="vault" @dragover="dragOverNode" @dragleave="dragLeaveNode" @drop="dragDropNode"
-                >{{ vault.split('/').slice(-1)[0] }}</div>
+                <div class="node-content-text active-node">
+                    <div style="height: 5px; width: 20px;"></div>
+                    <div class="node-file-name" :id="vault" @dragover="dragOverNode" @dragleave="dragLeaveNode" @drop="dragDropNode" @click="openFile()"
+                    >{{ vault.split('/').slice(-1)[0] }}</div>
                 </div>
             </div>
         </div>
@@ -98,16 +98,12 @@
                     }
             },
             openFile(node) {
-                if (document.querySelector('.active-node')!=event.target.parentElement.parentElement) {
+                document.querySelectorAll('.active-node').forEach(obj => obj.classList.remove('active-node'))
+                if (node) {
                     EventBus.$emit('fileopened', node.id);
-                    if (document.querySelector('.active-node')) {
-                        document.querySelector('.active-node').classList.remove('active-node')
-                    }
-                    event.target.parentElement.parentElement.classList.add('active-node')
                 }
                 else {
-                    document.querySelector('.active-node').classList.remove('active-node')
-                    EventBus.$emit('fileopened', node.id);
+                    EventBus.$emit('fileopened', this.vault);
                 }
             },
             dragStartNode(event) {

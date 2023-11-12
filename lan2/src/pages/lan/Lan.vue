@@ -11,7 +11,7 @@
             Carpetas
             </div>
             <div id="treeview" class="mx-1">
-            <TreeView :items="folderStructure" :vault="lan.name" v-if="folderStructure"></TreeView>
+            <TreeView :items="folderStructure" :vault="lan.location+'/'+lan.name" v-if="folderStructure"></TreeView>
             <div id="node-click-menu" v-if="clickMenu.opened" @blur="hideContextMenu"
               :style="{'top' : clickMenu.y + 'px', 'left' : clickMenu.x + 'px'}" tabindex="1">
               <div class="node-menu-item" @click="renameFile">
@@ -82,10 +82,10 @@
                 v-for="(tab, i) in tabs" 
                 :key="i" 
                 @click="openFile(tab)"
-                :class="tab==file ? 'active-tab' : 'tab'"
+                :class="tab.active ? 'active-tab' : 'tab'"
                 style="border-radius: 0px !important;"
                 >
-                {{ fileName(tab) }}
+                {{ tab.name }}
                 <v-btn @click="removeTab" x-small icon class="ml-1">
                   <v-icon>
                     mdi-close
@@ -109,14 +109,14 @@
               :concepts="lan.concepts"
               :relations="lan.relations"
               :categories="lan.categories"
-              :file="file"
+              :file="activeTab"
             />
             <TextView 
               v-if="lan.showing=='text'"
               :concepts="lan.concepts"
               :relations="lan.relations"
               :categories="lan.categories"
-              :file="file"
+              :file="activeTab"
             />
             <QueryView 
               v-if="lan.showing=='query'"
@@ -151,132 +151,18 @@
 
 <script>
 
-import TreeView from './../../components/TreeView';
-import BoardView from './../../components/BoardView';
-import QueryView from './../../components/QueryView';
-import FunctionsView from './../../components/FunctionsView';
-import TableView from './../../components/TableView';
-import TextView from './../../components/TextView';
+import TreeView from '@/components/TreeView';
+import BoardView from '@/components/BoardView';
+import QueryView from '@/components/QueryView';
+import FunctionsView from '@/components/FunctionsView';
+import TableView from '@/components/TableView';
+import TextView from '@/components/TextView';
 
 
-import EventBus from './../../event-bus.js';
+import EventBus from '@/event-bus.js';
 
-class Lan {
-  constructor(name, location) {
-    this.name = name
-    this.location = location
-    this.showing =  'board'
-    this.concepts =  []
-    this.relations =  []
-    this.categories =  []
-    this.statements = []
-    this.conditions =  []
-    this.actions =  []
-    this.selectingArea =  false
-    this.drawer =  false
-    this.loaded =  false
-    this.contents =  []
-    this.zoomVal =  1
-    this.objectType =  null
-    this.contentType =  null
-  }
-}
+import {Statement, Action, Condition, Category, Concept, Relation, Lan, Tab, Line} from '@/classes/classes.js';
 
-class Category {
-  constructor(name) {
-    this.objectType = 'category'
-    this.name = name
-    this.id = Math.floor(Math.random()*100000)
-    this.objects = []
-  }
-}
-
-class Concept {
-  constructor() {
-    this.objectType = 'concept'
-    this.name = ''
-    this.id = Math.floor(Math.random()*100000)
-    this.data = 'file'
-    this.contents = null
-
-    //Board values
-    this.x = 0
-    this.y = 0
-
-    //Attributes for easier parsing
-    this.relations = []
-    this.categories = []
-  }
-}
-
-class Relation {
-  constructor() {
-    this.objectType = 'relation'
-    this.name = ''
-    this.id = Math.floor(Math.random()*100000)
-    this.subject = null
-    this.object = null
-    this.offsetX1 = 0
-    this.offsetX2 = 0
-    this.offsetY1 = 0
-    this.offsetY2 = 0
-
-    //Attributes for easier parsing
-    this.categories = []
-  }
-}
-
-class Action {
-  constructor() {
-    this.objectType = 'action'
-    this.id = Math.floor(Math.random()*100000)
-    this.name = '#'+this.id.toString()
-    this.condition = null
-
-    //Board values
-    this.x = 100
-    this.y = 100
-
-    this.offsetX = 0
-    this.offsetY = 0
-  }
-}
-
-class Condition {
-  constructor() {
-    this.objectType = 'condition'
-    this.id = Math.floor(Math.random()*100000)
-    this.name = '#'+this.id.toString()
-    this.items = []
-
-    //Board values
-    this.x = 100
-    this.y = 100
-
-    this.statementOffsetX = 0
-    this.statementOffsetY = 0
-
-    this.actionOffsetX = 0
-    this.actionOffsetY = 0
-  }
-}
-
-class Statement {
-  constructor(type) {
-    this.objectType = 'statement'
-    this.id = Math.floor(Math.random()*100000)
-    this.name = '#'+this.id.toString()
-    this.type = type
-    this.items = []
-
-    //Board values
-    this.x = 100
-    this.y = 100
-
-    this.offsetX = 0
-    this.offsetY = 0
-  }
-}
 
 export default {
   name: 'App',
@@ -307,6 +193,17 @@ export default {
     },
   }),
   methods: {
+    updateLine(lineIndex, newContents) {
+      console.log(newContents)
+      this.activeTab.contents[lineIndex].contents = newContents
+    },
+    removeLine() {
+      this.activeTab.contents.splice(this.currentLine, 1)
+    },
+    appendLine(lineIndex, newLine) {
+      this.activeTab.contents.splice(lineIndex + 1, 0, newLine)
+    },
+
     scrollHorizontal(event) {
       const scrollAmount = event.deltaY * 3;
       document.getElementById('tabs-inner').scrollLeft += scrollAmount;
@@ -330,11 +227,59 @@ export default {
         tabsInner.scrollLeft = tabsInner.scrollWidth - tabsInner.clientWidth;
       })
     },
-    openFile(file) {
+    async getContents(file) {
+      const message = await new Promise(resolve => {
+        window.electronAPI.requestFileData(file)
+        window.electronAPI.response('file-data-response', resolve)
+      });
+
+      if (typeof message === 'string') {
+        let contents = []
+
+        let lines = message.split('\n')
+        for (let i=0; i<lines.length; i++) {
+          let line = new Line()
+          line.contents = lines[i]
+          contents.push(line)
+        }
+
+        return contents
+      }
+
+      return false
+    },
+
+    textToMatrix(lines) {
+      console.log(lines)
+    },
+
+    async openFile(file) {
+      document.querySelectorAll('.active-node').forEach(obj => obj.classList.remove('active-node'))
       if (this.file != file) {
         this.file = file
-        this.tabs.push(this.file)
-        this.tabs = [...new Set(this.tabs)]
+
+        if (this.tabs.filter(obj => obj.active).length) {
+          this.tabs.filter(obj => obj.active)[0].active = false
+        }
+
+        if (this.tabs.filter(obj => obj.path==this.file).length == 0) {
+
+          let contents = await this.getContents(this.file)
+
+          if (Array.isArray(contents)) {
+            let newTab = new Tab()
+            newTab.name = this.fileName(this.file)
+            newTab.path = this.file
+            newTab.active = true
+
+
+            newTab.contents = contents
+            this.tabs.push(newTab)
+          }
+        }
+        else {
+          this.tabs.filter(obj => obj.path==this.file)[0].active = true
+        }
 
         this.$nextTick(()=>{
           const tabsInner = document.getElementById('tabs-inner');
@@ -347,8 +292,10 @@ export default {
       }
       else {
         this.file = this.lan.location + '/' + this.lan.name
-        document.querySelector('.active-node').classList.remove('active-node')
-        //this.tabs = this.tabs.filter(tab => tab!=file)
+        if (document.querySelector('.active-node')) {
+          document.querySelector('.active-node').classList.remove('active-node')
+        }
+        this.tabs = this.tabs.filter(tab => tab!=file)
       }
     },
     async updateFolderStructure() {
@@ -369,13 +316,13 @@ export default {
     },
     //Save new name for a node
     saveFileNode(node, new_name) {
-        var short_name = new_name.split('/').splice(-1)[0].split('.').slice(0,-1).join(".")
         if (this.file==node.id) {
             this.file = new_name
         }
-        for (let i=0; i<this.files.length; i++) {
-            if (this.files[i][0]==node.id) {
-                this.files[i] = [new_name, short_name]
+        for (let i=0; i<this.tabs.length; i++) {
+            if (this.tabs[i].path==node.id) {
+                this.tabs[i].path = new_name
+                this.tabs[i].name = this.fileName(new_name)
             }
         }
     },
@@ -551,7 +498,9 @@ export default {
       this.saveData()
     },
     fileName(path) {
-      return path.split('/').slice(-1)[0]
+      if (path) {
+        return path.split('/').slice(-1)[0]
+      }
     },
     createObject(name, object, content) {
       if (object==0) {
@@ -642,7 +591,7 @@ export default {
       if (this.file == target.id) {
           this.file = ''  
       }
-      this.tabs = this.tabs.filter(file => file!=target.id)
+      this.tabs = this.tabs.filter(file => file.path!=target.id)
 
       function removeNodeFromTree(tree, nodeId) {
           for (let i = 0; i < tree.length; i++) {
@@ -676,6 +625,18 @@ export default {
     objectType: 'saveData',
     contentType: 'saveData',
   },
+
+  computed : {
+    activeTab() {
+      if (this.tabs.filter(obj => obj.active)) {
+        return this.tabs.filter(obj => obj.active)[0]
+      }
+      else {
+        return false
+      }
+    }
+  },
+
   async created() {
     //SideBar.vue methods
     /*EventBus.$on('createFile', this.createFile);
@@ -724,6 +685,9 @@ export default {
 
     //TextView Events
     EventBus.$on('updateContents', this.updateContents)
+    EventBus.$on('updateLine', this.updateLine)
+    EventBus.$on('appendLine', this.appendLine)
+    EventBus.$on('removeLine', this.removeLine)
 
     //TreeView Events
     EventBus.$on('nodeMouseDown', this.nodeMouseDown)
@@ -843,6 +807,9 @@ export default {
     user-select: none;
     cursor: default;
     border: 1px solid transparent;
+  }
+  .tab:hover {
+    color: var(--v-error-base);
   }
   .active-tab {
     border-color: var(--v-error-base);
