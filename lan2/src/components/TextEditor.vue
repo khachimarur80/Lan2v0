@@ -309,8 +309,9 @@ export default {
       }
       else {
         let currentLine = document.querySelector('div[data-num="'+this.currentLine+'"]')
-
-        EventBus.$emit('updateLine', this.currentLine, currentLine.innerText)
+        if (currentLine) {
+          EventBus.$emit('updateLine', this.currentLine, currentLine.innerText)
+        }
 
         this.$emit('saveContents')
       }

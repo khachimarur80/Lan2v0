@@ -1,17 +1,140 @@
 <template>
-  <v-container>
-    <div id="table">
+  <div>
+    <div id="table" v-if="table">
+      <br>
+      <div class="mb-2 d-flex justify-space-around">
+        <v-btn-toggle dense v-model="editMode" tile>
+          <v-tooltip top>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                dark
+                v-bind="attrs"
+                v-on="on"
+              >
+                <v-icon>
+                  mdi-plus
+                </v-icon>
+              </v-btn>
+            </template>
+            <span>1</span>
+          </v-tooltip>
+          <v-tooltip top>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                dark
+                v-bind="attrs"
+                v-on="on"
+              >
+                <v-icon>
+                  mdi-arrow-expand-horizontal
+                </v-icon>
+              </v-btn>
+            </template>
+            <span>2</span>
+          </v-tooltip>
+          <v-tooltip top>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                dark
+                v-bind="attrs"
+                v-on="on"
+              >
+                <v-icon>
+                  mdi-arrow-expand-horizontal
+                </v-icon>
+              </v-btn>
+            </template>
+            <span>3</span>
+          </v-tooltip>
+          <v-tooltip top>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                color="error"
+                outlined
+                dark
+                v-bind="attrs"
+                v-on="on"
+              >
+                <v-icon>
+                  mdi-pound
+                </v-icon>
+              </v-btn>
+            </template>
+            <span>Q</span>
+          </v-tooltip>
+          <v-tooltip top>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                color="success"
+                outlined
+                dark
+                v-bind="attrs"
+                v-on="on"
+              >
+                <v-icon>
+                  mdi-code-brackets
+                </v-icon>
+              </v-btn>
+            </template>
+            <span>W</span>
+          </v-tooltip>
+          <v-tooltip top>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                outlined
+                color="primary"
+                dark
+                v-bind="attrs"
+                v-on="on"
+              >
+                <v-icon>
+                  mdi-transit-connection-horizontal
+                </v-icon>
+              </v-btn>
+            </template>
+            <span>E</span>
+          </v-tooltip>
+          <v-tooltip top>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                outlined
+                color="yellow"
+                dark
+                v-bind="attrs"
+                v-on="on"
+              >
+                <v-icon>
+                  mdi-function-variant
+                </v-icon>
+              </v-btn>
+            </template>
+            <span>R</span>
+          </v-tooltip>
+        </v-btn-toggle>
+      </div>
+      <br>
       <table>
-        <tr v-for="(row, i) in contents" :key="i">
-          <td v-for="(cell, j) in splitLine(row)" :key="j" @mouseup="split(row)">{{ cell }}</td>
+        <tr v-for="(row, i) in table.matrix" :key="i">
+          <td
+          v-for="(cell, j) in row" 
+          :key="j"
+          @click="cellClick"
+          @mouseleave="currentHover=null"
+          @mousemove="cellMouseMove"
+          >{{ cell.data }}</td>
         </tr>
       </table>
     </div>
-  </v-container>
+    <div class="notFile" v-else>
+      <v-icon x-large>
+        mdi-folder-outline
+      </v-icon>
+    </div>
+  </div>
 </template>
 
 <script>
-
+  // eslint-disable-next-line
   class Concept {
     constructor() {
       this.objectType = 'concept'
@@ -30,7 +153,7 @@
     }
   }
 
-
+  import { Cell } from '@/classes/classes.js';
   import EventBus from '@/event-bus'
   // eslint-disable-next-line
   import Vue from 'vue'
@@ -39,178 +162,184 @@
     name: 'QueryView',
 
     data: () => ({
-      contents: [
-      ]
+      editMode: null,
+      currentHover: null,
     }),
 
     props: {
       concepts: {
-          required: true,
+        required: true,
       },
       relations: {
-          required: true,
+        required: true,
       },
       categories: {
-          required: true,
+        required: true,
       },
-      lines: {
-          required: true,
+      table: {
+        required: true,
       },
     },
 
     methods: {
-      split(line) {
-        let selection = window.getSelection();
-        let range = selection.getRangeAt(0);
-        let selectedText = range.toString();
+      async updateMatrix() {
+        if (this.table) {
+          
+          const message = await new Promise(resolve => {
+            window.electronAPI.requestFileData(this.table.path)
+            window.electronAPI.response('file-data-response', resolve)
+          });
 
-        if (selectedText) {
-          let exists = false;
-          for (let i=0; i<this.concepts.length; i++) {
-            if (this.concepts[i].name.toLowerCase()==selectedText.toLowerCase()) {
-              exists = true
-              break
-            }
+          if (typeof message === 'string') {
+            let contents = message.split('\n')
+            EventBus.$emit('updateMatrixContents', contents)
           }
-          if (!exists) {
-            let concept = new Concept()
-            concept.name = selectedText
 
-            let n = this.concepts.length + 1
-            let angle = 0
-            let circle = 0
-
-            while (n>0) {
-              let dotsNum;
-              if (circle==0) {
-                dotsNum = 1
-              }
-              else {
-                dotsNum = circle*5 + 1
-              }
-              if (n-dotsNum < 0) {
-                angle = (2*Math.PI / (circle*4 + 1))*(dotsNum-n)
-                n -= dotsNum
-              }
-              else if (n-dotsNum==0) {
-                n -= dotsNum
-              }
-              else {
-                n -= dotsNum
-                circle += 1
-              }
-            }
+          if (this.table.matrix.length > this.table.contents.length) {
+            EventBus.$emit('spliceMatrix', this.table.contents.length)
             
-            const rect = document.getElementById('table').getBoundingClientRect();
+            for (let i=0; i<this.table.contents.length; i++) {
+              let words = this.table.contents[i].split(' ')
+              if (this.table.matrix[i].length > words.length) {
+                EventBus.$emit('spliceMatrixRow', i, words.length)
 
-            concept.x = circle*80*Math.cos(angle) + rect.width/2
-            concept.y = circle*80*Math.sin(angle) + rect.height/2
-
-            EventBus.$emit('addItem', concept)
-          }
-
-          const startPosition = range.startOffset;
-          const endPosition = startPosition + selectedText.length;
-
-          line.divisions.push(startPosition)
-          line.divisions.push(endPosition)
-        }
-
-        selection.removeAllRanges();
-      },
-      setQuery(object) {
-        this.selectedQuery = object
-      },
-      deleteItem(item) {
-        EventBus.$emit('deleteItem', item)
-      },
-      splitLine(line) {
-        if (line.divisions.length === 0) {
-          return [line.contents]
-        }
-
-        const result = [];
-        let start = 0;
-
-        for (const index of line.divisions) {
-            if (start < index) {
-                result.push(line.contents.slice(start, index));
+                for (let j=0; j<words.length; j++) {
+                  EventBus.$emit('updateMatrixCellData', i, j, words[j])
+                }
+              }
+              else {
+                for (let j=0; j<this.table.matrix[i].length; j++) {
+                  EventBus.$emit('updateMatrixCellData', i, j, words[j])
+                }
+                for (let j=this.table.matrix[i].length; j<words.length ;j++) {
+                  let newCell = new Cell()
+                  newCell.data = words[j]
+                  EventBus.$emit('newMatrixCell', i, newCell)
+                }
+              }
             }
-            start = index;
+          }
+          else {
+            for (let i=0; i<this.table.matrix.length; i++) {
+              let words = this.table.contents[i].split(' ')
+              if (this.table.matrix[i].length > words.length) {
+                EventBus.$emit('spliceMatrixRow', i, words.length)
+                for (let j=0; j<words.length; j++) {
+                  EventBus.$emit('updateMatrixCellData', i, j, words[j])
+                }
+              }
+              else {
+                for (let j=0; j<this.table.matrix[i].length; j++) {
+                  EventBus.$emit('updateMatrixCellData', i, j, words[j])
+                }
+                for (let j=this.table.matrix[i].length; j<words.length ;j++) {
+                  let newCell = new Cell()
+                  newCell.data = words[j]
+                  EventBus.$emit('newMatrixCell', i, newCell)
+                }
+              }
+            }
+            for (let i=this.table.matrix.length; i<this.table.contents.length; i++) {
+              let newRow = []
+              let words = this.table.contents[i].split(' ')
+              for (let j=0; j<words.length; j++) {
+                let newCell = new Cell()
+                newCell.data = words[j]
+                newRow.push(newCell)
+              }
+              EventBus.$emit('newMatrixRow', newRow)
+            }
+          }
+        }
+      },
+      addCommand(event) {
+        let previous = this.editMode
+
+        if (event.key == 'q') {
+          this.editMode = 3
+        }
+        else if (event.key == 'w') {
+          this.editMode = 4
+        }
+        else if (event.key == 'e') {
+          this.editMode = 5
+        }
+        else if (event.key == 'r') {
+          this.editMode = 6
+        }
+        else if (parseInt(event.key) && parseInt(event.key) <= 3) {
+          this.editMode = parseInt(event.key)-1
         }
 
-        if (start < line.contents.length) {
-            result.push(line.contents.slice(start));
+        if (previous == this.editMode) {
+          this.editMode = null
         }
-
-        return result;
+      },
+      cellClick(event) {
+        console.log(event.offsetX)
+        let dimensions = event.target.getBoundingClientRect()
+        if (event.offsetX<5 || event.offsetX>(dimensions.width-5)) {
+          console.log('EDGE')
+        }
+        else {
+          console.log('BODY')
+        }
+      },
+      cellMouseMove(event) {
+        this.currentHover = event.target
+        let dimensions = event.target.getBoundingClientRect()
+        if (event.offsetX<5 || event.offsetX>(dimensions.width-5)) {
+          if (this.editMode == 0) {
+            event.target.style.cursor = "cell"
+          }
+          else if (this.editMode == 1) {
+            event.target.style.cursor = "col-resize"
+          }
+          else if (this.editMode == 2) {
+            event.target.style.cursor = "ew-resize"
+          }
+          else if ([3,4,5,6].includes(this.editMode)) {
+            event.target.style.cursor = "copy"
+          }
+        }
+        else {
+          event.target.style.cursor = "default"
+        }
       }
     },
 
     computed: {
-      filtered() {
-        if (this.objectType===0) {
-          return this.categories
-        }
-        else if (this.objectType===1) {
-          if (this.contentType===0) {
-            return this.concepts.filter((concept) => concept.data=='file')
-          }
-          if (this.contentType==1) {
-            return this.concepts.filter((concept) => concept.data=='image') 
-          }
-          if (this.contentType===2) {
-            return this.concepts.filter((concept) => concept.data=='link') 
-          }
-          else {
-            return this.concepts
-          }
-        }
-        else if (this.objectType===2) {
-          return this.relations
-        }
-        else if (this.objectType===3) {
-          return this.statements
-        }
-        else if (this.objectType==4) {
-          return this.conditions
-        }
-        else if (this.objectType===5) {
-          return this.actions
-        }
-        else {
-          return [...this.concepts, ...this.relations, ...this.categories, ...this.statements, ...this.conditions, ...this.actions]
-        }
-      },
-      objects() {
-        return [...this.concepts, ...this.relations, ...this.categories, ...this.statements, ...this.conditions, ...this.actions]
-      }
     },
 
-    created() {
-      EventBus.$on('setQuery', this.setQuery)
-
-      this.contents = this.lines
-
-      for (let i=0; i<this.concepts.length; i++) {
-        for (let j=0; j<this.lines.length; j++) {
-          let string = this.contents[j].contents
-          let substring = this.concepts[i].name
-
-          let startIndex = 0;
-
-          while (startIndex !== -1) {
-            startIndex = string.indexOf(substring, startIndex);
-
-            if (startIndex !== -1) {
-              const endIndex = startIndex + substring.length;
-              this.contents[j].divisions.push(startIndex);
-              this.contents[j].divisions.push(endIndex);
-              startIndex++;
-            }
+    watch : {
+      table() {
+        this.updateMatrix()
+      },
+      editMode() {
+        if (this.currentHover) {
+          if (this.editMode == 0) {
+            this.currentHover.style.cursor = "cell"
+          }
+          else if (this.editMode == 1) {
+            this.currentHover.style.cursor = "col-resize"
+          }
+          else if (this.editMode == 2) {
+            this.currentHover.style.cursor = "ew-resize"
+          }
+          else if ([3,4,5,6].includes(this.editMode)) {
+            this.currentHover.style.cursor = "copy"
           }
         }
       }
+    },
+    mounted() {
+      window.addEventListener('keydown', this.addCommand);
+    },
+    beforeDestroy() {
+      window.removeEventListener('keydown', this.addCommand);
+    },
+    created() {
+      EventBus.$on('updateMatrix', this.updateMatrix)
     }
   }
 </script>
@@ -225,17 +354,24 @@
     text-align: center;
     vertical-align: middle;
     padding: 5px;
-    border: 1px solid #333;
   }
   tr {
     display: flex;
   }
   td {
     flex: 1;
+    border: 1px solid #333;
   }
   #table {
     height: 100%;
     width: 100h;
     padding: 20px;
+  }
+  .notFile {
+    height: calc(100vh - 40px - 30px - 20px);
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 </style>

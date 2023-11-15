@@ -17,7 +17,7 @@
             <div id="actions">
               <v-dialog v-model="newLanImageForm.show" width="300" v-if="user">
                 <template v-slot:activator="{on, attrs}">
-                  <v-btn color="error" outlined width="120" v-on="on" v-bind="attrs">
+                  <v-btn color="error" outlined width="120" v-on="on" v-bind="attrs" style="border-radius: 0px;" elevation="0">
                     Nuevo
                   </v-btn>
                 </template>
@@ -66,7 +66,7 @@
               </v-dialog>
               <v-dialog v-model="newLanIndexingForm.show" width="300" v-if="user">
                 <template v-slot:activator="{on, attrs}">
-                  <v-btn color="error" outlined width="120" v-on="on" v-bind="attrs">
+                  <v-btn color="error" outlined width="120" v-on="on" v-bind="attrs" style="border-radius: 0px;" elevation="0">
                     Indexar
                   </v-btn>
                 </template>
@@ -93,11 +93,10 @@
                         mdi-file
                       </v-icon>
                       <v-text-field 
-                        v-model="newLanIndexingForm.name" 
-                        label="Lan name ..."
-                        clearable
+                        :value="newLanIndexingForm.name" 
                         hide-details
-                        dense>
+                        dense
+                        readonly>
                       </v-text-field>
                     </div>
                   </v-card-text>
@@ -108,7 +107,7 @@
                       Cancel
                     </v-btn>
                     <v-btn color="success" text :disabled="indexingLanImageFormValid" @click="indexLan">
-                      Create
+                      Add
                     </v-btn>
                   </v-card-actions>
                 </v-card>
@@ -130,7 +129,7 @@
             <div class="vertical-line">
             </div>
             <div id="news" class="px-4">
-              <v-tabs color="red" dense height="30">
+              <v-tabs color="red" dense height="30" class="dark-tabs">
                 <v-tab>Tutorial</v-tab>
                 <v-tab>Features</v-tab>
                 <v-tab>Update</v-tab>
@@ -138,13 +137,46 @@
             </div>
           </div>
           <div id="lans" class="px-4">
-            <v-tabs color="red" height="30" v-model="lanFilter">
+            <v-tabs color="red" height="30" v-model="lanFilter" class="dark-tabs">
               <v-tab>All</v-tab>
               <v-tab>Recent</v-tab>
               <v-tab>Favourites</v-tab>
             </v-tabs>
             <div class="lans-list py-3 px-1" v-if="user">
-              <v-card height="120" width="120" v-for="(lan, i) in  user.lans" :key="i"  class="d-flex justify-center align-center glow" @click="openLan(lan)">
+              <v-card height="120" width="120" v-for="(lan, i) in  user.lans" :key="i"  class="d-flex justify-center align-center glow" @click="openLan(lan)" style="border-radius: 0px;" elevation="0">
+                <v-menu offset-y tile>
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-btn 
+                      absolute
+                      icon 
+                      small 
+                      style="top: 5px; right: 5px"
+                      v-bind="attrs"
+                      v-on="on">
+                      <v-icon>
+                        mdi-dots-vertical
+                      </v-icon>
+                    </v-btn>
+                  </template>
+                  <div class="d-flex flex-column">
+                    <v-btn 
+                      dense
+                      small 
+                      tile
+                      @click="openLan(lan)"
+                      >
+                      open
+                    </v-btn>
+                    <v-btn 
+                      dense
+                      small 
+                      tile
+                      @click="removeLan(lan)"
+                      >
+                      remove
+                    </v-btn>
+                  </div>
+                </v-menu>
                 <div class="text-h5">{{ lan.name }}</div>
               </v-card>
             </div>
@@ -202,7 +234,11 @@ export default {
     openLan(lan) {
       window.electronAPI.openLan(lan)
     },
+    removeLan(lan) {
+      this.user.lans = this.user.lans.filter(obj => obj!=lan)
 
+      window.electronAPI.saveUserData(this.user)
+    },
     cancelIndexing() {
       this.newLanIndexingForm = {
         show: false,
@@ -260,8 +296,13 @@ export default {
         window.electronAPI.openFileBrowser('dir')
         window.electronAPI.response('open-file-browser-response', resolve)
       });
+      
+      if (message) {
+        let name = message.split('/').slice(-1)[0]
 
-      this.newLanIndexingForm.location = message
+        this.newLanIndexingForm.name = name
+        this.newLanIndexingForm.location = message.slice(0, -name.length-1)
+      }
     },
     async indexLan() {
       let indexingLanImage = new LanImage
@@ -272,7 +313,8 @@ export default {
 
       window.electronAPI.saveUserData(this.user)
 
-      this.cancelCreation()
+
+      this.cancelIndexing()
     }
   },
   watch: {
@@ -284,6 +326,18 @@ export default {
     })
 
     this.user = user
+
+    for (let i=0; i<this.user.lans.length; i++) {
+      let valid = await new Promise(resolve => {
+        window.electronAPI.verifyPath(this.user.lans[i].location)
+        window.electronAPI.response('path-verification-response', resolve)
+      })
+      if (!valid) {
+        this.user.lans.splice(i, 1)
+      }
+    }
+
+    window.electronAPI.saveUserData(this.user)
   },
   computed : {
     newLanImageFormValid() {
@@ -382,11 +436,10 @@ export default {
   }
 
   .glow {
-    border-radius: 5px;
     user-select: none;
   }
   .glow:hover {
-    box-shadow: 0px 0px 4px var(--v-error-base);
+    outline: 1px solid var(--v-error-base);
     cursor: pointer;
   }
 </style>

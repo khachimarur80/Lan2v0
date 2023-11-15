@@ -53,11 +53,11 @@
                 mdi-table
               </v-icon>
             </v-btn>
-            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='function' ? 'error' : ''" @click="setShowing('function')">
+            <!--<v-btn icon dense x-small class="mx-2" :color="lan.showing=='function' ? 'error' : ''" @click="setShowing('function')">
               <v-icon>
                 mdi-function-variant
               </v-icon>
-            </v-btn>
+            </v-btn>-->
 
             <v-divider style="width: 20px" class="my-1">
             </v-divider>
@@ -109,7 +109,7 @@
               :concepts="lan.concepts"
               :relations="lan.relations"
               :categories="lan.categories"
-              :file="activeTab"
+              :table="getTable()"
             />
             <TextView 
               v-if="lan.showing=='text'"
@@ -161,7 +161,7 @@ import TextView from '@/components/TextView';
 
 import EventBus from '@/event-bus.js';
 
-import {Statement, Action, Condition, Category, Concept, Relation, Lan, Tab, Line} from '@/classes/classes.js';
+import {Statement, Action, Condition, Category, Concept, Relation, Lan, Tab, Line, Table} from '@/classes/classes.js';
 
 
 export default {
@@ -193,15 +193,74 @@ export default {
     },
   }),
   methods: {
-    updateLine(lineIndex, newContents) {
-      console.log(newContents)
-      this.activeTab.contents[lineIndex].contents = newContents
+    updateMatrixContents(contents) {
+      let table = this.getTable()
+
+      table.contents = contents
+
+      this.saveData()
     },
-    removeLine() {
-      this.activeTab.contents.splice(this.currentLine, 1)
+    newMatrixRow(row) {
+      let table = this.getTable()
+      table.matrix.push(row)
+      this.saveData()
+    },
+    newMatrixCell(i, cell) {
+      let table = this.getTable()
+      table.matrix[i].push(cell)
+
+      this.saveData()
+    },
+    spliceMatrix(i) {
+      let table = this.getTable()
+      table.matrix.splice(i);
+
+      this.saveData()
+    },
+    spliceMatrixRow(i, j) {
+      let table = this.getTable()
+      table.matrix[i].splice(j);
+
+      this.saveData()
+    },
+    updateMatrixCellData(i, j, data) {
+      let table = this.getTable()
+
+      table.matrix[i][j].data = data
+
+      this.saveData()
+    },
+
+    updateLine(lineIndex, newContents) {
+      this.activeTab.contents[lineIndex].contents = newContents
+      let table = this.getTable()
+
+      if (table) {
+        table.contents[lineIndex] = newContents
+      }
+
+      this.saveData()
+    },
+    removeLine(lineIndex) {
+      this.activeTab.contents.splice(lineIndex, 1)
+      let table = this.getTable()
+
+      if (table) {
+        table.contents.splice(lineIndex, 1)
+      }
+
+      this.saveData()
     },
     appendLine(lineIndex, newLine) {
       this.activeTab.contents.splice(lineIndex + 1, 0, newLine)
+
+      let table = this.getTable()
+
+      if (table) {
+        table.contents.splice(lineIndex + 1, 0, newLine.contents)
+      }
+
+      this.saveData()
     },
 
     scrollHorizontal(event) {
@@ -211,15 +270,19 @@ export default {
     },
     removeTab(i) {
       this.tabs.splice(i, 1)
+      this.file = this.lan.location + '/' + this.lan.name
+      if (document.querySelector('.active-node')) {
+        document.querySelector('.active-node').classList.remove('active-node')
+      }
     },
     async createFile() {
       const message = await new Promise(resolve => {
           window.electronAPI.createFile(this.file)
           window.electronAPI.response('create-file-response', resolve)
       });
-      this.file = message
-      this.tabs.push(this.file)
-      this.tabs = [...new Set(this.tabs)];
+
+      this.openFile(message)
+
       this.updateFolderStructure()
 
       this.$nextTick(()=>{
@@ -227,7 +290,7 @@ export default {
         tabsInner.scrollLeft = tabsInner.scrollWidth - tabsInner.clientWidth;
       })
     },
-    async getContents(file) {
+    async getLines(file) {
       const message = await new Promise(resolve => {
         window.electronAPI.requestFileData(file)
         window.electronAPI.response('file-data-response', resolve)
@@ -249,8 +312,15 @@ export default {
       return false
     },
 
-    textToMatrix(lines) {
-      console.log(lines)
+    async getContents(file) {
+      const message = await new Promise(resolve => {
+        window.electronAPI.requestFileData(file)
+        window.electronAPI.response('file-data-response', resolve)
+      });
+
+      let contents = message.split('\n')
+      
+      return contents
     },
 
     async openFile(file) {
@@ -264,7 +334,7 @@ export default {
 
         if (this.tabs.filter(obj => obj.path==this.file).length == 0) {
 
-          let contents = await this.getContents(this.file)
+          let contents = await this.getLines(this.file)
 
           if (Array.isArray(contents)) {
             let newTab = new Tab()
@@ -312,7 +382,7 @@ export default {
         
     //Open a directory
     openNode(node) {
-        node.open = !node.open
+      node.open = !node.open
     },
     //Save new name for a node
     saveFileNode(node, new_name) {
@@ -338,6 +408,9 @@ export default {
       }
       else {
         this.lan.showing = showing
+        if (showing == 'table') {
+          EventBus.$emit('updateMatrix')
+        }
       }
       this.saveData()
     },
@@ -445,7 +518,6 @@ export default {
       })
     },
     saveData() {
-      // eslint-disable-next-line
       const data = this.lan
       window.electronAPI.saveData(data)
     },
@@ -495,6 +567,11 @@ export default {
     },
     updateContents(contents) {
       window.electronAPI.requestSaveFile(this.file, contents)
+
+      let table = this.getTable()
+
+      table.contents = contents.split('\n')
+
       this.saveData()
     },
     fileName(path) {
@@ -613,6 +690,43 @@ export default {
       }
       removeNodeFromTree(this.folderStructure, target.id)
     },
+
+    findNodeById(nodes, targetId) {
+      for (const node of nodes) {
+          if (node.id === targetId) {
+              return node;
+          }
+          else if (node.children && node.children.length) {
+              const foundNode = this.findNodeById(node.children, targetId);
+              if (foundNode) {
+                  return foundNode;
+              }
+          }
+      }
+      return null;
+    },
+    getTable() {
+      if (!this.activeTab) {
+        return false
+      }
+      else {
+        let table = this.lan.tables.filter(table => table.path == this.file)
+
+        if (table.length) {
+          return table[0]
+        }
+        else {
+          let newTable = new Table()
+          newTable.path = this.file
+          newTable.contents = this.activeTab.contents.map(obj => obj.contents)
+
+          this.lan.tables.push(newTable)
+          this.saveData()
+
+          return newTable
+        }
+      }
+    }
   },
   watch: {
     showing: 'saveData',
@@ -634,7 +748,7 @@ export default {
       else {
         return false
       }
-    }
+    },
   },
 
   async created() {
@@ -691,6 +805,13 @@ export default {
 
     //TreeView Events
     EventBus.$on('nodeMouseDown', this.nodeMouseDown)
+
+    EventBus.$on('newMatrixCell', this.newMatrixCell)
+    EventBus.$on('newMatrixRow', this.newMatrixRow)
+    EventBus.$on('spliceMatrix', this.spliceMatrix)
+    EventBus.$on('spliceMatrixRow', this.spliceMatrixRow)
+    EventBus.$on('updateMatrixCellData', this.updateMatrixCellData)
+    EventBus.$on('updateMatrixContents', this.updateMatrixContents)
   }
 };
 </script>

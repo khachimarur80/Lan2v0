@@ -11,35 +11,7 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
 ])
 
-class User {
-  constructor() {
-    this.username = null
-    this.github = null
-    this.lans = []
-    this.settings = null
-  }
-}
-
-class Lan {
-  constructor(name, location) {
-    this.name = name
-    this.location = location
-    this.showing =  'board'
-    this.concepts =  []
-    this.relations =  []
-    this.categories =  []
-    this.statements = []
-    this.conditions =  []
-    this.actions =  []
-    this.selectingArea =  false
-    this.drawer =  false
-    this.loaded =  false
-    this.contents =  []
-    this.zoomVal =  1
-    this.objectType =  null
-    this.contentType =  null
-  }
-}
+import {User, Lan} from './classes/classes.js'
 
 let win
 let currentLan
@@ -129,7 +101,7 @@ function createHomeWindow(devPath) {
     titleBarStyle: 'hidden',
     trafficLightPosition: { x: 11, y: 12 },
     frame: false,
-    //hasShadow: false,
+    hasShadow: false,
     resizable: false,
     webPreferences: {
       nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
@@ -153,7 +125,6 @@ function createLanWindow(devPath) {
     width: 1025,
     height: 800,
     titleBarStyle: 'hidden',
-    roundedCorners: false,
     hasShadow: false,
     backgroundColor: '#121212',
     webPreferences: {
@@ -269,6 +240,17 @@ app.on('ready', async () => {
     });
   });
 
+  ipcMain.on('verify-path', (event, path) => {
+    fs.access(path, fs.constants.F_OK, (err) => {
+      if (err) {
+        win.webContents.send('path-verification-response', false);
+      }
+      else {
+        win.webContents.send('path-verification-response', true);
+      }
+    });
+  })
+
   ipcMain.on('open-lan', (event, data) => {
     win.close()
     win = createLanWindow('lan.html')
@@ -371,6 +353,7 @@ app.on('ready', async () => {
 
   ipcMain.on('get-data', () => {
     const filePath = path.join(currentLan.location, currentLan.name,'.lan.json');
+
     fs.readFile(filePath, 'utf-8', (err, data) => {
       const message = JSON.parse(data);
       win.webContents.send('get-data-response', message);

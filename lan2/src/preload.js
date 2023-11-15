@@ -25,4 +25,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     requestFileDeletion: (fileName) => ipcRenderer.send('request-file-deletion', fileName),
     requestSaveFile: (fileName, fileData) => ipcRenderer.send('request-save-file', fileName, fileData),
     requestFileData: (fileName) => ipcRenderer.send('request-file-data', fileName),
+    verifyPath: (path) => ipcRenderer.send('verify-path', path),
 })

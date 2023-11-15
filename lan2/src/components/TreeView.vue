@@ -78,24 +78,24 @@
             },
             //Update file or directory name
             async saveFile(event) {
-                    event.target.setAttribute('contenteditable', 'false')
+                event.target.setAttribute('contenteditable', 'false')
 
-                    const message = await new Promise(resolve => {
-                        window.electronAPI.requestChangeFileName(event.target.id, event.target.innerText)
-                        window.electronAPI.response('change-filename-response', resolve)
-                    })
+                const message = await new Promise(resolve => {
+                    window.electronAPI.requestChangeFileName(event.target.id, event.target.innerText)
+                    window.electronAPI.response('change-filename-response', resolve)
+                })
 
-                    if (message) {
-                        var targetNode = this.findNodeById(this.items, event.target.id)
-                        //Change file prop in Main.vue
-                        EventBus.$emit('saveFileNode', targetNode, message)
-                    
-                        targetNode.name = message.split('/').splice(-1)[0].split('.').slice(0,-1).join(".")
-                        targetNode.id = message
-                    }
-                    else {
-                        event.target.innerText = this.findNodeById(this.items, event.target.id).name
-                    }
+                if (message) {
+                    var targetNode = this.findNodeById(this.items, event.target.id)
+                    //Change file prop in Main.vue
+                    EventBus.$emit('saveFileNode', targetNode, message)
+                
+                    targetNode.name = message.split('/').splice(-1)[0].split('.').slice(0,-1).join(".")
+                    targetNode.id = message
+                }
+                else {
+                    event.target.innerText = this.findNodeById(this.items, event.target.id).name
+                }
             },
             openFile(node) {
                 document.querySelectorAll('.active-node').forEach(obj => obj.classList.remove('active-node'))

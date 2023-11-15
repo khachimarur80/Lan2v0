@@ -20,6 +20,7 @@
 <script>
 
 import TextEditor from './TextEditor';
+import EventBus from '@/event-bus.js';
 
 export default {
   name: 'TextView',
@@ -45,10 +46,8 @@ export default {
 
   methods: {
     saveContents() {
-      console.log(this.file)
       let parsedContent = this.file.contents.map(obj => obj.contents).join('\n')
-      console.log(this.file)
-      window.electronAPI.requestSaveFile(this.file.path, parsedContent)
+      EventBus.$emit('updateContents', parsedContent)
     },
     
   },

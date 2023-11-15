@@ -3,17 +3,21 @@ class Lan {
   constructor(name, location) {
     this.name = name
     this.location = location
-    this.showing =  'board'
+
+
     this.concepts =  []
     this.relations =  []
     this.categories =  []
     this.statements = []
     this.conditions =  []
     this.actions =  []
+    this.tables = []
+
+
     this.selectingArea =  false
     this.drawer =  false
     this.loaded =  false
-    this.contents =  []
+    this.showing =  'board'
     this.zoomVal =  1
     this.objectType =  null
     this.contentType =  null
@@ -133,4 +137,29 @@ class Tab {
   }
 }
 
-export { Lan, Category, Concept, Relation, Action, Condition, Statement, Line, Tab };
+class Table {
+  constructor() {
+    this.id = Math.floor(Math.random()*100000)
+    this.path = ''
+    this.contents = null
+    this.matrix = []
+  }
+}
+
+class User {
+  constructor() {
+    this.username = null
+    this.github = null
+    this.lans = []
+    this.settings = null
+  }
+}
+
+class Cell {
+  constructor() {
+    this.data = null
+    this.type = null
+  }
+}
+
+export { Cell, User, Lan, Category, Concept, Relation, Action, Condition, Statement, Line, Tab, Table };
