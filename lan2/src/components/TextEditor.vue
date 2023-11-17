@@ -9,7 +9,7 @@
         @dblclick="lineDoubleClick"  
         contenteditable 
         >
-        <div :class="['line', currentLine==i ? 'currentLine' : '',  blockType(line.type)]" v-for="(line, i) in file.contents" :key="file.name + i">
+        <div :class="['line', currentLine==i ? 'currentLine' : '',  blockType(line.type)]" v-for="(line, i) in file.contents" :key="file.name + i" contenteditable="false">
           <div class="references" contenteditable="false">
             <v-btn icon text color="amber" dense small>
               <v-icon>
@@ -265,18 +265,23 @@ export default {
     },
     parseConcepts(lines) {
       const lineContents = lines;
-
+      
       for (let i=0; i<lineContents.length; i++) {
         let words = lineContents[i].innerText.split(' ')
         words = Array.from(new Set(words)).filter(word => word.trim() !== '')
 
+        let regex = new RegExp(`\\b(` + words.map(word => word.trim()).join('|') + `)\\b`, 'g');
+
         for (let j=0; j<words.length; j++) {
-          let concept = this.concepts.find(concept => concept.name==words[j].trim())
-          if (concept) {
-            let word = words[j].trim();
-            let regex = new RegExp(`\\b${word}\\b`, 'g');
-            lineContents[i].innerHTML = this.file.contents[i].contents.replace(regex, `<span contenteditable="false" class="inline-concept">${word}</span>`);
-          }
+          lineContents[i].innerHTML = this.file.contents[i].contents.replace(regex, (match) => {
+            let matchingConcept = this.concepts.find(concept => concept.name == match.trim());
+            if (matchingConcept) {
+                return `<span class="inline-concept" contenteditable="false">${matchingConcept.name}</span> `;
+            } 
+            else {
+                return match;
+            }
+        });
         }
       }
     },
@@ -609,23 +614,7 @@ export default {
     const lineContents = this.$refs.lineContents;
 
     if (lineContents) {
-      for (let i=0; i<lineContents.length; i++) {
-        let words = lineContents[i].textContent.split(' ')
-        words = Array.from(new Set(words)).filter(word => word.trim() !== '')
-        for (let j=0; j<words.length; j++) {
-          let concept = this.concepts.find(concept => concept.name==words[j].trim())
-          if (concept) {
-            let word = words[j].trim();
-            let regex = new RegExp(`\\b${word}\\b`, 'g');
-
-            lineContents[i].innerHTML = this.file.contents[i].contents.replace(regex, `<span contenteditable="false" class="inline-concept">${word}</span>`);
-
-            if (j==(words.length-1)) {
-              lineContents[i].innerHTML += '&nbsp;'
-            } 
-          }
-        }
-      }
+      this.parseConcepts(lineContents)
     }
   },
 }

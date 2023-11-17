@@ -43,21 +43,21 @@
                 mdi-text-recognition
               </v-icon>
             </v-btn>
-            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='query' ? 'error' : ''" @click="setShowing('query')">
-              <v-icon>
-                mdi-database-search
-              </v-icon>
-            </v-btn>
             <v-btn icon dense x-small class="mx-2" :color="lan.showing=='table' ? 'error' : ''" @click="setShowing('table')">
               <v-icon>
                 mdi-table
               </v-icon>
             </v-btn>
-            <!--<v-btn icon dense x-small class="mx-2" :color="lan.showing=='function' ? 'error' : ''" @click="setShowing('function')">
+            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='function' ? 'error' : ''" @click="setShowing('function')">
               <v-icon>
                 mdi-function-variant
               </v-icon>
-            </v-btn>-->
+            </v-btn>
+            <v-btn icon dense x-small class="mx-2" :color="lan.showing=='query' ? 'error' : ''" @click="setShowing('query')">
+              <v-icon>
+                mdi-database-search
+              </v-icon>
+            </v-btn>
 
             <v-divider style="width: 20px" class="my-1">
             </v-divider>
@@ -128,6 +128,7 @@
               :conditions="lan.conditions"
               :objectType="lan.objectType"
               :contentType="lan.contentType"
+              :sentences="lan.sentences"
             />
             <FunctionsView 
             v-if="lan.showing=='functions'"
@@ -161,7 +162,7 @@ import TextView from '@/components/TextView';
 
 import EventBus from '@/event-bus.js';
 
-import {Statement, Action, Condition, Category, Concept, Relation, Lan, Tab, Line, Table} from '@/classes/classes.js';
+import {Statement, Action, Condition, Category, Concept, Relation, Lan, Tab, Line, Table, Cell} from '@/classes/classes.js';
 
 
 export default {
@@ -193,6 +194,49 @@ export default {
     },
   }),
   methods: {
+    mergeCells(row, col) {
+      let table = this.getTable()
+
+      let currentCell = table.matrix[row][col]
+      let nextCell = table.matrix[row][col+1]
+
+      currentCell.data += ' '+nextCell.data
+      table.matrix[row].splice(col+1, 1)
+
+      this.saveData()
+    },
+    splitCell(row, col) {
+      alert('SPLIT')
+      console.log(row,col)
+    },
+    insertCellAfter(row, col) {
+      let table = this.getTable()
+
+      let newCell = new Cell()
+      table.matrix[row].splice(col + 1, 0, newCell)
+
+      this.saveData()
+    },
+    insertCellBefore(row, col) {
+      let table = this.getTable()
+
+      let newCell = new Cell()
+      table.matrix[row].splice(col, 0, newCell)
+
+      this.saveData()
+    },
+    setCellType(row, col, type) {
+      let table = this.getTable()
+
+      if (table.matrix[row][col].type!=type) {
+        table.matrix[row][col].type = type
+      }
+      else {
+        table.matrix[row][col].type = null
+      }
+
+      this.saveData()
+    },
     updateMatrixContents(contents) {
       let table = this.getTable()
 
@@ -226,7 +270,9 @@ export default {
     updateMatrixCellData(i, j, data) {
       let table = this.getTable()
 
-      table.matrix[i][j].data = data
+      if (table.matrix[i][j]) {
+        table.matrix[i][j].data = data
+      }
 
       this.saveData()
     },
@@ -467,29 +513,29 @@ export default {
       EventBus.$emit('updateStatementsDrag')
     },
     getObjectById(id) {
-      for(let i=0; i<this.concepts.length; i++) {
-        if (this.concepts[i].id==id) {
-          return this.concepts[i]
+      for(let i=0; i<this.lan.concepts.length; i++) {
+        if (this.lan.concepts[i].id==id) {
+          return this.lan.concepts[i]
         }
       }
-      for(let i=0; i<this.statements.length; i++) {
-        if (this.statements[i].id==id) {
-          return this.statements[i]
+      for(let i=0; i<this.lan.statements.length; i++) {
+        if (this.lan.statements[i].id==id) {
+          return this.lan.statements[i]
         }
       }
-      for(let i=0; i<this.actions.length; i++) {
-        if (this.actions[i].id==id) {
-          return this.actions[i]
+      for(let i=0; i<this.lan.actions.length; i++) {
+        if (this.lan.actions[i].id==id) {
+          return this.lan.actions[i]
         }
       }
-      for(let i=0; i<this.conditions.length; i++) {
-        if (this.conditions[i].id==id) {
-          return this.conditions[i]
+      for(let i=0; i<this.lan.conditions.length; i++) {
+        if (this.lan.conditions[i].id==id) {
+          return this.lan.conditions[i]
         }
       }
-      for(let i=0; i<this.relations.length; i++) {
-        if (this.relations[i].id==id) {
-          return this.relations[i]
+      for(let i=0; i<this.lan.relations.length; i++) {
+        if (this.lan.relations[i].id==id) {
+          return this.lan.relations[i]
         }
       }
     },
@@ -566,11 +612,12 @@ export default {
       }
     },
     updateContents(contents) {
-      window.electronAPI.requestSaveFile(this.file, contents)
+      let parsedContents = contents.replace(/\xa0/g, ' ')
+      window.electronAPI.requestSaveFile(this.file, parsedContents)
 
       let table = this.getTable()
 
-      table.contents = contents.split('\n')
+      table.contents = parsedContents.split('\n')
 
       this.saveData()
     },
@@ -726,7 +773,90 @@ export default {
           return newTable
         }
       }
-    }
+    },
+    getAllNodeCombinations(graphNodes, graphEdges) {
+        const graph = {};
+        const allPaths = [];
+
+        for (const node of graphNodes) {
+            graph[node.id] = [];
+        }
+
+        for (const edge of graphEdges) {
+            graph[edge.subject].push(edge.object);
+        }
+
+        function findPaths(currentNode, currentPath) {
+            const neighbors = graph[currentNode];
+
+            if (neighbors.length === 0) {
+                // Node has no outgoing edges, return the current path
+                allPaths.push([...currentPath]);
+            } else {
+                for (const neighbor of neighbors) {
+                    // Explore each neighbor recursively
+                    const newPath = [...currentPath, neighbor];
+                    findPaths(neighbor, newPath);
+                }
+            }
+        }
+
+        for (const node of graphNodes) {
+            findPaths(node.id, [node.id]);
+        }
+
+        return allPaths.map(sentence => sentence.map(cell => this.getObjectById(cell).name));
+    },
+    updateCombinations(graphNodes, graphEdges, allPaths, newNode, newEdge) {
+      const graph = {};
+      const newNodeId = newNode.id;
+
+      // Copy existing paths
+      const updatedPaths = allPaths.map(path => [...path]);
+
+      // Update the graph with the new node and edge
+      for (const node of graphNodes) {
+          graph[node.id] = [];
+      }
+
+      for (const edge of graphEdges) {
+          graph[edge.subject].push(edge.object);
+      }
+
+      if (newEdge) {
+          graph[newEdge.subject].push(newEdge.object);
+      }
+
+      if (newNode) {
+          graph[newNodeId] = [];
+          for (const edge of graphEdges) {
+              if (edge.subject === newNodeId) {
+                  updatedPaths.push([newNodeId, edge.object]);
+              }
+          }
+      }
+
+      function findPaths(currentNode, currentPath) {
+          const neighbors = graph[currentNode];
+
+          if (neighbors.length === 0) {
+              // Node has no outgoing edges, return the current path
+              updatedPaths.push([...currentPath]);
+          } else {
+              for (const neighbor of neighbors) {
+                  // Explore each neighbor recursively
+                  const newPath = [...currentPath, neighbor];
+                  findPaths(neighbor, newPath);
+              }
+          }
+      }
+
+      if (newNode) {
+          findPaths(newNodeId, [newNodeId]);
+      }
+
+      return updatedPaths;
+    },
   },
   watch: {
     showing: 'saveData',
@@ -752,16 +882,11 @@ export default {
   },
 
   async created() {
-    //SideBar.vue methods
-    /*EventBus.$on('createFile', this.createFile);
-    EventBus.$on('createFolder', this.createFolder);
-    EventBus.$on('toggleTreeview', this.toggleTreeview);
-    EventBus.$on('removeNodeFile', this.removeNodeFile);*/
-        //TreeView.vue methods
-        EventBus.$on('openNode', this.openNode);
-        EventBus.$on('saveFileNode', this.saveFileNode)
-        EventBus.$on('fileopened', this.openFile);
-        EventBus.$on('filemove', this.moveFile);
+    //TreeView.vue methods
+    EventBus.$on('openNode', this.openNode);
+    EventBus.$on('saveFileNode', this.saveFileNode)
+    EventBus.$on('fileopened', this.openFile);
+    EventBus.$on('filemove', this.moveFile);
 
     const data = await new Promise(resolve => {
       window.electronAPI.getData()
@@ -812,6 +937,16 @@ export default {
     EventBus.$on('spliceMatrixRow', this.spliceMatrixRow)
     EventBus.$on('updateMatrixCellData', this.updateMatrixCellData)
     EventBus.$on('updateMatrixContents', this.updateMatrixContents)
+    EventBus.$on('setCellType', this.setCellType)
+
+    EventBus.$on('splitCell', this.splitCell)
+    EventBus.$on('mergeCells', this.mergeCells)
+    EventBus.$on('insertCellBefore', this.insertCellBefore)
+    EventBus.$on('insertCellAfter', this.insertCellAfter)
+
+    let sentences = this.getAllNodeCombinations(this.lan.concepts, this.lan.relations)
+
+    console.log(sentences)
   }
 };
 </script>
@@ -878,7 +1013,7 @@ export default {
   }
   #contents {
     height: 100%;
-    width: calc(100% - 400px);
+    width: calc(100% - 200px);
     overflow: hidden;
   }
   #leftsidebar.hideFolders ~ #contents {
@@ -899,6 +1034,7 @@ export default {
   .inline-concept {
     color: var(--v-success-base) !important;
     cursor: pointer;
+    caret-color: #fff;
   }
   .highlight-concept {
     text-decoration-color: var(--v-primary-base) !important;

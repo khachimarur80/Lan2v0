@@ -24,9 +24,10 @@
                 dark
                 v-bind="attrs"
                 v-on="on"
+                disabled
               >
                 <v-icon>
-                  mdi-arrow-expand-horizontal
+                  mdi-table-split-cell
                 </v-icon>
               </v-btn>
             </template>
@@ -38,9 +39,10 @@
                 dark
                 v-bind="attrs"
                 v-on="on"
+                disabled
               >
                 <v-icon>
-                  mdi-arrow-expand-horizontal
+                  mdi-table-merge-cells
                 </v-icon>
               </v-btn>
             </template>
@@ -121,7 +123,15 @@
           @click="cellClick"
           @mouseleave="currentHover=null"
           @mousemove="cellMouseMove"
-          >{{ cell.data }}</td>
+          :id="i+'-'+j"
+          :class="cell.type">
+            <span v-if="cell.type!='function'">{{ cell.data }}</span>
+            <span v-else>{{ cell.data }}</span> 
+          </td>
+          <td class="result">
+            <div :class="['result-inner', evaluation(row) ? 'true' : 'false']">
+            </div>
+          </td>
         </tr>
       </table>
     </div>
@@ -182,9 +192,18 @@
     },
 
     methods: {
+      switchFunctionType(cell, i, j) {
+        let functionTypes = ['and', 'or', 'not', 'exists', 'for all']
+        if (!functionTypes.includes(cell.data)) {
+          EventBus.$emit('updateMatrixCellData', i, j, 'and')
+        }
+        else {
+          let index = (functionTypes.indexOf(cell.data)+1)%6
+          EventBus.$emit('updateMatrixCellData', i, j, functionTypes[index])
+        }
+      },
       async updateMatrix() {
         if (this.table) {
-          
           const message = await new Promise(resolve => {
             window.electronAPI.requestFileData(this.table.path)
             window.electronAPI.response('file-data-response', resolve)
@@ -199,7 +218,9 @@
             EventBus.$emit('spliceMatrix', this.table.contents.length)
             
             for (let i=0; i<this.table.contents.length; i++) {
+              console.log(this.table.contents[i])
               let words = this.table.contents[i].split(' ')
+              console.log(words)
               if (this.table.matrix[i].length > words.length) {
                 EventBus.$emit('spliceMatrixRow', i, words.length)
 
@@ -250,10 +271,30 @@
               EventBus.$emit('newMatrixRow', newRow)
             }
           }
+          for (let row = 0; row<this.table.matrix.length; row++) {
+            for (let col = 0; col<this.table.matrix[row].length; col++) {
+              let cell = this.table.matrix[row][col]
+              let category = this.categories.filter(category => category.name==cell.data)
+              let concept = this.concepts.filter(concept => concept.name==cell.data)
+              let relation = this.relations.filter(relation => relation.name==cell.data)
+
+              if (category.length && cell.type!='category') {
+                EventBus.$emit('setCellType', row, col, 'category')
+              }
+              else if (concept.length && cell.type!='concept') {
+                EventBus.$emit('setCellType', row, col, 'concept')
+              }
+              else if (relation.length && cell.type!='relation') {
+                EventBus.$emit('setCellType', row, col, 'relation')
+              }
+              else if (category.length+concept.length+relation.length==0) {
+                EventBus.$emit('setCellType', row, col, null)
+              }
+            }
+          }
         }
       },
       addCommand(event) {
-        let previous = this.editMode
 
         if (event.key == 'q') {
           this.editMode = 3
@@ -270,19 +311,52 @@
         else if (parseInt(event.key) && parseInt(event.key) <= 3) {
           this.editMode = parseInt(event.key)-1
         }
-
-        if (previous == this.editMode) {
-          this.editMode = null
-        }
       },
       cellClick(event) {
-        console.log(event.offsetX)
         let dimensions = event.target.getBoundingClientRect()
         if (event.offsetX<5 || event.offsetX>(dimensions.width-5)) {
-          console.log('EDGE')
+          const row = parseInt(event.target.id.split('-')[0])
+          let col = parseInt(event.target.id.split('-')[1])
+
+          switch(this.editMode) {
+            case 0:
+              if (event.offsetX<5) {
+                EventBus.$emit('insertCellBefore', row, col)
+              }
+              else {
+                EventBus.$emit('insertCellAfter', row, col)
+              }
+              break
+            case 1:
+              EventBus.$emit('splitCell', row, col)
+              break
+            case 2:
+              EventBus.$emit('mergeCells', row, col)
+              break
+          }
         }
         else {
-          console.log('BODY')
+          const row = parseInt(event.target.id.split('-')[0])
+          const col = parseInt(event.target.id.split('-')[1])
+
+          switch (this.editMode) {
+            case 3:
+              EventBus.$emit('setCellType', row, col, 'category')
+              break
+            case 4:
+              EventBus.$emit('setCellType', row, col, 'concept')
+              break
+            case 5:
+              EventBus.$emit('setCellType', row, col, 'relation')
+              break
+            case 6:
+              EventBus.$emit('setCellType', row, col, 'function')
+              break
+          }
+
+          if (!this.editMode && this.table.matrix[row][col].type=='function') {
+            this.switchFunctionType(this.table.matrix[row][col], row, col)
+          }
         }
       },
       cellMouseMove(event) {
@@ -309,6 +383,36 @@
     },
 
     computed: {
+      evaluation() {
+        // eslint-disable-next-line
+        return (row) => {
+          let result = true
+          for (let i=0; i<row.length; i++) {
+            let cell = row[i]
+            if (result || (cell.data=='or'&&cell.type=='function')) {
+              if (cell.type == 'category') {
+                let category = this.categories.filter(category => category.name==cell.data)
+                if (!category.length) {
+                  result = false
+                }
+              }
+              else if (cell.type == 'relation') {
+                let relation = this.relations.filter(relation => relation.name==cell.data)
+                if (!relation.length) {
+                  result = false
+                }
+              }
+              else if (cell.type == 'concept') {
+                let concept = this.concepts.filter(concept => concept.name==cell.data)
+                if (!concept.length) {
+                  result = false
+                }
+              }
+            }
+          }
+          return result
+        }
+      }
     },
 
     watch : {
@@ -357,11 +461,28 @@
   }
   tr {
     display: flex;
+    height: 30px !important;
   }
-  td {
+  td:not(.result) {
     flex: 1;
     border: 1px solid #333;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0px;
+    padding-left: 10px;
+    padding-right: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+  td:not(:last-child) {
+    border-right: none;
+  }
+  tr:not(:first-child) td {
+    border-top: none;
+  }
+
   #table {
     height: 100%;
     width: 100h;
@@ -373,5 +494,64 @@
     display: flex;
     justify-content: center;
     align-items: center;
+  }
+  .category:after {
+    background: var(--v-error-base);
+    content: '';
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left:0;
+    position: absolute;
+    opacity: .15;
+  }
+  .concept:after {
+    background: var(--v-success-base);
+    content: '';
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left:0;
+    position: absolute;
+    opacity: .15;
+  }
+  .relation:after {
+    background: var(--v-primary-base);
+    content: '';
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left:0;
+    position: absolute;
+    opacity: .15;
+  }
+  .function:after {
+    background: orange;
+    content: '';
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left:0;
+    position: absolute;
+    opacity: .15;
+  }
+
+  .result {
+    width: 30px !important;
+    border-left: 1px solid #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .result-inner {
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+  }
+  .result-inner.false {
+    background: var(--v-error-base);
+  }
+  .result-inner.true {
+    background: var(--v-success-base);
   }
 </style>

@@ -1,6 +1,7 @@
 <template>
   <v-container>
     <TextEditor
+      class="pa-9"
       v-if="file"
       :concepts="concepts"
       :relations="relations"

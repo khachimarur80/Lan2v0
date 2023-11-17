@@ -122,7 +122,7 @@ function createHomeWindow(devPath) {
 
 function createLanWindow(devPath) {
   let win = new BrowserWindow({
-    width: 1025,
+    width: 875,
     height: 800,
     titleBarStyle: 'hidden',
     hasShadow: false,

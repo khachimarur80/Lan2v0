@@ -107,7 +107,7 @@
           </v-icon>
         </v-btn>
       </div>
-      <input v-model="relation.name" @focus="focusItem(relation)" :style="{ width : relation.name.length+'ch', transform: 'rotate('+ relationRotation(relation) +  'deg)'}">
+      <input v-model="relation.name" @focus="focusItem(relation)" :style="{ width : relation.name.length*12+'px', transform: 'rotate('+ relationRotation(relation) +  'deg)'}">
       <div class="relation-info">
         <span v-for="category in relation.categories" :key="category.id">{{ category.name }}</span>
       </div>
@@ -609,12 +609,12 @@
   outline: none;
   border-radius: 5px;
   min-width: 30px;
-  width: 60px;
+  width: fit-content;
   padding-left: 3px;
   padding-right: 3px;
   color: var(--v-primary-base);
   transform-origin: center;
-  background: #fff;
+  background: #121212;
 }
 
 line {

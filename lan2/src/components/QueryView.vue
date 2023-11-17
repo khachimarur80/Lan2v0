@@ -35,6 +35,9 @@
         </v-row>
       </div>
       <div id="data">
+        <div v-for="(sentence, i) in sentences" :key="i">
+          {{ sentence }}
+        </div>
         <v-card width="50%" height="100%" flat class="pa-3 overflow-auto" v-if="selectedQuery.id">
           <v-card-title>
             <div class="text-h4">
@@ -332,10 +335,13 @@
           required: true,
       },
       objectType: {
-        required: true
+        required: true,
       },
       contentType: {
-        required: true
+        required: true,
+      },
+      sentences: {
+        required: true,
       }
     },
 
