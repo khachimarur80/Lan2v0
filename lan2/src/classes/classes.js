@@ -63,7 +63,8 @@ class Relation {
     this.offsetX2 = 0
     this.offsetY1 = 0
     this.offsetY2 = 0
-
+    this.sentences = []
+    
     //Attributes for easier parsing
     this.categories = []
   }

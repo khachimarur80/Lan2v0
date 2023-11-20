@@ -2,6 +2,7 @@
   <div id="functions" class="pa-9">
     <v-card height="100%" width="100%" flat outlined style="background: #121212; border-radius: 0px;" class="px-2 pt-2 overflow-auto">
       <v-autocomplete
+        color="error"
         v-model="select"
         :items="relations"
         item-value="id"
@@ -10,7 +11,7 @@
         hide-no-data
         hide-details
         dense
-        label="Search for object"
+        label="Search for a function"
         outlined
         item-text="name"
         @change="selectItem">
@@ -35,15 +36,18 @@
         <v-divider></v-divider><br>
         <v-text-field 
           outlined
-          v-for="(output, i) in outputs" :key="i"
+          v-for="(sentence, i) in selectedQuery.sentences" :key="i"
           @keydown.enter="addOutput(i)"
           @keydown.backspace="removeOutput(i)"
+          @input="updateSentence(i)"
           autofocus
           dense
           hide-details
           hide-no-data
           class="py-1"
           :data-id="i"
+          :value="sentence"
+          color="error"
           >
         </v-text-field>
       </v-card-text>
@@ -61,7 +65,6 @@
     data: () => ({
       select: null,
       selectedQuery: null,
-      outputs: [''],
     }),
 
     props: {
@@ -77,12 +80,15 @@
     },
 
     methods: {
+      updateSentence(index) {
+        EventBus.$emit('modifySentenceFromFunction', this.selectedQuery, index, document.querySelector("[data-id='"+(index)+"']").value)
+      },
       addOutput(index) {
-        this.outputs.splice(index + 1, 0, '')
+        EventBus.$emit('addSentenceToFunction', this.selectedQuery, index)
       },
       removeOutput(index) {
-        if (this.outputs.length > 1) {
-          this.outputs.splice(index)
+        if (this.selectedQuery.sentences.length > 1) {
+          EventBus.$emit('removeSentenceFromFunction', this.selectedQuery, index)
           document.querySelector("[data-id='"+(index-1)+"']").focus()
         }
       },

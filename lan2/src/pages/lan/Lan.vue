@@ -835,8 +835,19 @@ export default {
       }
 
       return updatedCombinations;
+    },
+    addSentenceToFunction(relation, index) {
+      relation.sentences.splice(index + 1, 0, '')
+      this.saveData()
+    },
+    removeSentenceFromFunction(relation, index) {
+      relation.sentences.splice(index)
+      this.saveData()
+    },
+    modifySentenceFromFunction(relation, index, content) {
+      relation.sentences[index] = content
+      this.saveData()
     }
-
 
 
   },
@@ -926,13 +937,17 @@ export default {
     EventBus.$on('insertCellBefore', this.insertCellBefore)
     EventBus.$on('insertCellAfter', this.insertCellAfter)
 
+    EventBus.$on('addSentenceToFunction', this.addSentenceToFunction)
+    EventBus.$on('removeSentenceFromFunction', this.removeSentenceFromFunction)
+    EventBus.$on('modifySentenceFromFunction', this.modifySentenceFromFunction)
+
     let sentences = this.getAllNodeCombinations(this.lan.concepts, this.lan.relations)
     
     this.lan.sentences = sentences
 
-    for (const sentence in sentences) {
-      console.log(sentences[sentence].map(obj => this.getObjectById(obj).name))
-    }
+    //for (const sentence in sentences) {
+      //console.log(sentences[sentence].map(obj => this.getObjectById(obj).name))
+    //}
   }
 };
 </script>

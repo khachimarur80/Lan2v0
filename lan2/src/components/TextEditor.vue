@@ -263,6 +263,157 @@ export default {
         return type
       }
     },
+    parseFunctions(lines) {
+      const lineContents = lines;
+      
+      for (let i=0; i<lineContents.length; i++) {
+        let relations = lineContents[i].innerText.split(' ')
+        relations = Array.from(new Set(relations)).filter(relation => relation.trim() !== '')
+        
+        for (let j=0; j<relations.length; j++) {
+          let relation = this.relations.filter(obj => obj.name==relations[j])
+          if (relation.length) {
+            relation = relation[0]
+            for (let k=0; k<relation.sentences.length; k++) {
+              let words = relation.sentences[k].split(' ')
+              let firstWord = words[0].slice(1,-1)
+              let connection = words[1].slice(1,-1)
+              let lastWord = words[2].slice(1,-1)
+
+              if ((firstWord=='object' && j==0) || (lastWord=='subject' && j==relations.length-1)) {
+                continue
+              }
+              else {
+                if (firstWord=='object') {
+                  firstWord = relations[j-1]
+                }
+                if (lastWord=='object') {
+                  lastWord = relations[j-1]
+                }
+                if (firstWord=='subject') {
+                  firstWord = relations[j+1]
+                }
+                if (lastWord=='subject') {
+                  lastWord = relations[j+1]
+                }
+                
+
+                let firstWordObj = this.concepts.filter(obj=>obj.name==firstWord)[0]
+                let connectionObj = this.relations.filter(obj=>obj.name==connection)
+                let lastWordObj = this.concepts.filter(obj=>obj.name==lastWord)[0]
+
+                if (!firstWordObj || connectionObj.length<1 || !lastWordObj ) {
+                  console.log('1')
+                  if (!firstWordObj) {
+                    firstWordObj = new Concept()
+                    firstWordObj.name = firstWord
+
+                    let n = this.concepts.length + 1
+                    let angle = 0
+                    let circle = 0
+
+                    while (n>0) {
+                      let dotsNum;
+                      if (circle==0) {
+                        dotsNum = 1
+                      }
+                      else {
+                        dotsNum = circle*5 + 1
+                      }
+                      if (n-dotsNum < 0) {
+                        angle = (2*Math.PI / (circle*4 + 1))*(dotsNum-n)
+                        n -= dotsNum
+                      }
+                      else if (n-dotsNum==0) {
+                        n -= dotsNum
+                      }
+                      else {
+                        n -= dotsNum
+                        circle += 1
+                      }
+                    }
+                      
+                    const rect = document.getElementById('text').getBoundingClientRect();
+
+                    firstWordObj.x = circle*80*Math.cos(angle) + rect.width/2
+                    firstWordObj.y = circle*80*Math.sin(angle) + rect.height/2
+
+                    EventBus.$emit('addItem', firstWordObj)
+                  }
+                  if (!lastWordObj) {
+                    lastWordObj = new Concept()
+                    lastWordObj.name = lastWord
+
+                    let n = this.concepts.length + 1
+                    let angle = 0
+                    let circle = 0
+
+                    while (n>0) {
+                      let dotsNum;
+                      if (circle==0) {
+                        dotsNum = 1
+                      }
+                      else {
+                        dotsNum = circle*5 + 1
+                      }
+                      if (n-dotsNum < 0) {
+                        angle = (2*Math.PI / (circle*4 + 1))*(dotsNum-n)
+                        n -= dotsNum
+                      }
+                      else if (n-dotsNum==0) {
+                        n -= dotsNum
+                      }
+                      else {
+                        n -= dotsNum
+                        circle += 1
+                      }
+                    }
+                      
+                    const rect = document.getElementById('text').getBoundingClientRect();
+
+                    lastWordObj.x = circle*80*Math.cos(angle) + rect.width/2
+                    lastWordObj.y = circle*80*Math.sin(angle) + rect.height/2
+
+                    EventBus.$emit('addItem', lastWordObj)
+                  }
+                }
+
+                let exists = false
+                let bug = false
+
+                for (let z=0; z<connectionObj.length; z++) {
+                  if (connectionObj[z].object==firstWordObj.id && connectionObj[z].subject==lastWordObj.id) {
+                    exists = true
+                    break
+                  }
+                  else if (connectionObj[z].subject==firstWordObj.id && connectionObj[z].object==lastWordObj.id) {
+                    bug = true
+                    break
+                  }
+                }
+
+                if (bug) {
+                  alert('INCONGRUENCE ON LINE '+i+' AT WORD '+j+'!')
+                }
+                else if (!exists) {
+                  alert('NEW RELATION!')
+                  let relation = new Relation()
+                  relation.name = connection
+
+                  let object = firstWordObj
+                  let subject = lastWordObj
+
+                  relation.object = object.id
+                  relation.subject = subject.id
+
+                  EventBus.$emit('addItem', relation)
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     parseConcepts(lines) {
       const lineContents = lines;
       
@@ -615,6 +766,7 @@ export default {
 
     if (lineContents) {
       this.parseConcepts(lineContents)
+      this.parseFunctions(lineContents)
     }
   },
 }
