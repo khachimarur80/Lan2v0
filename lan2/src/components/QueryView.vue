@@ -251,15 +251,15 @@
             </div>
           </div>
           <div v-if="selectedQuery.data=='file'" style="height: calc(100%);">
-            <TextEditor
+            <!--<TextEditor
               :concepts="concepts"
               :relations="relations"
               :categories="categories"
-              :contents="selectedQuery.contents"
+              :contents="selectedQuery"
               @addItem="addItem"
               @updateContents="updateContents"
             >
-            </TextEditor>
+            </TextEditor>-->
           </div>
           <div v-if="selectedQuery.data=='image'">
             <div class="text-h5">Contents</div><br>
@@ -294,6 +294,7 @@
   import EventBus from '@/event-bus'
   import colors from 'vuetify/lib/util/colors';
   import { marked } from 'marked';
+  // eslint-disable-next-line
   import TextEditor from './TextEditor';
 
   export default {
@@ -312,6 +313,7 @@
     }),
 
     components: {
+      // eslint-disable-next-line
       TextEditor
     },
 

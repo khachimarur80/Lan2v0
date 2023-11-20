@@ -189,6 +189,9 @@
       table: {
         required: true,
       },
+      sentences: {
+        required: true,
+      }
     },
 
     methods: {
@@ -386,31 +389,31 @@
       evaluation() {
         // eslint-disable-next-line
         return (row) => {
-          let result = true
+          let sentence = []
+
           for (let i=0; i<row.length; i++) {
             let cell = row[i]
-            if (result || (cell.data=='or'&&cell.type=='function')) {
-              if (cell.type == 'category') {
-                let category = this.categories.filter(category => category.name==cell.data)
-                if (!category.length) {
-                  result = false
-                }
+            if (cell.type == 'category') {
+              let category = this.categories.filter(category => category.name==cell.data)
+              if (category.length) {
+                sentence.push(category[0].id)
               }
-              else if (cell.type == 'relation') {
-                let relation = this.relations.filter(relation => relation.name==cell.data)
-                if (!relation.length) {
-                  result = false
-                }
+            }
+            else if (cell.type == 'relation') {
+              let relation = this.relations.filter(relation => relation.name==cell.data)
+              if (relation.length) {
+                sentence.push(relation[0].id)
               }
-              else if (cell.type == 'concept') {
-                let concept = this.concepts.filter(concept => concept.name==cell.data)
-                if (!concept.length) {
-                  result = false
-                }
+            }
+            else if (cell.type == 'concept') {
+              let concept = this.concepts.filter(concept => concept.name==cell.data)
+              if (concept.length) {
+                sentence.push(concept[0].id)
               }
             }
           }
-          return result
+
+          return this.sentences.some(arr => arr.every((val, i) => val === sentence[i]))
         }
       }
     },

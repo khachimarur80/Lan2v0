@@ -486,7 +486,7 @@
 
           degrees = (degrees+360)%360
 
-          return degrees;
+          return degrees + 180;
         }
       },
       conceptPos() {

@@ -110,6 +110,7 @@
               :relations="lan.relations"
               :categories="lan.categories"
               :table="getTable()"
+              :sentences="lan.sentences"
             />
             <TextView 
               v-if="lan.showing=='text'"
@@ -573,6 +574,8 @@ export default {
       }
       else if (item.objectType == 'relation') {
         this.lan.relations.push(item)
+        //let updated = this.updateAllNodeCombinations(this.lan.concepts, this.lan.relations, item, this.lan.sentences)
+        //this.lan.sentences = updated
       }
       else if (item.objectType == 'statement') {
         this.lan.statements.push(item)
@@ -585,6 +588,8 @@ export default {
       }
       else {
         this.lan.concepts.push(item)
+        //let updated = this.updateAllNodeCombinations(this.lan.concepts, this.lan.relations, item, this.lan.sentences)
+        //this.lan.sentences = updated
       }
     },
     addTag(target, tag) {
@@ -774,89 +779,69 @@ export default {
         }
       }
     },
-    getAllNodeCombinations(graphNodes, graphEdges) {
-        const graph = {};
-        const allPaths = [];
 
-        for (const node of graphNodes) {
-            graph[node.id] = [];
+    explorePaths(graph, startNode, visitedEdges, currentPath, nodeCombinations) {
+      for (const edge of graph.edges) {
+        if (!visitedEdges.has(edge.id) && edge.object === startNode.id) {
+          visitedEdges.add(edge.id);
+
+          const nextNode = graph.nodes.find(node => node.id === edge.subject);
+          this.explorePaths(graph, nextNode, visitedEdges, [...currentPath, edge.id, nextNode.id], nodeCombinations);
+
+          visitedEdges.delete(edge.id);
         }
+      }
 
-        for (const edge of graphEdges) {
-            graph[edge.subject].push(edge.object);
-        }
-
-        function findPaths(currentNode, currentPath) {
-            const neighbors = graph[currentNode];
-
-            if (neighbors.length === 0) {
-                // Node has no outgoing edges, return the current path
-                allPaths.push([...currentPath]);
-            } else {
-                for (const neighbor of neighbors) {
-                    // Explore each neighbor recursively
-                    const newPath = [...currentPath, neighbor];
-                    findPaths(neighbor, newPath);
-                }
-            }
-        }
-
-        for (const node of graphNodes) {
-            findPaths(node.id, [node.id]);
-        }
-
-        return allPaths.map(sentence => sentence.map(cell => this.getObjectById(cell).name));
+      nodeCombinations.push([...currentPath]);
     },
-    updateCombinations(graphNodes, graphEdges, allPaths, newNode, newEdge) {
-      const graph = {};
-      const newNodeId = newNode.id;
+    getAllNodeCombinations(nodes, edges) {
+      const graph = {
+        nodes: [...nodes],
+        edges: [...edges],
+      };
 
-      // Copy existing paths
-      const updatedPaths = allPaths.map(path => [...path]);
+      const nodeCombinations = [];
 
-      // Update the graph with the new node and edge
-      for (const node of graphNodes) {
-          graph[node.id] = [];
+      for (const startNode of graph.nodes) {
+        const visitedEdges = new Set();
+        this.explorePaths(graph, startNode, visitedEdges, [startNode.id], nodeCombinations);
       }
 
-      for (const edge of graphEdges) {
-          graph[edge.subject].push(edge.object);
-      }
-
-      if (newEdge) {
-          graph[newEdge.subject].push(newEdge.object);
-      }
-
-      if (newNode) {
-          graph[newNodeId] = [];
-          for (const edge of graphEdges) {
-              if (edge.subject === newNodeId) {
-                  updatedPaths.push([newNodeId, edge.object]);
-              }
-          }
-      }
-
-      function findPaths(currentNode, currentPath) {
-          const neighbors = graph[currentNode];
-
-          if (neighbors.length === 0) {
-              // Node has no outgoing edges, return the current path
-              updatedPaths.push([...currentPath]);
-          } else {
-              for (const neighbor of neighbors) {
-                  // Explore each neighbor recursively
-                  const newPath = [...currentPath, neighbor];
-                  findPaths(neighbor, newPath);
-              }
-          }
-      }
-
-      if (newNode) {
-          findPaths(newNodeId, [newNodeId]);
-      }
-
-      return updatedPaths;
+      return nodeCombinations;
     },
+    updateCombinations(combinations, newNodeOrEdge) {
+      const updatedCombinations = [...combinations];
+      
+      // Add the new node or edge as an individual path
+      if (newNodeOrEdge instanceof Concept) {
+        updatedCombinations.push([newNodeOrEdge.id]);
+      } else if (newNodeOrEdge instanceof Relation) {
+        updatedCombinations.push([newNodeOrEdge.subject, newNodeOrEdge.id, newNodeOrEdge.object]);
+      }
+
+      // If the new element is a node, check if it can be connected to form new paths
+      if (newNodeOrEdge instanceof Relation) {
+        for (const combination of combinations) {
+          const lastNode = combination[combination.length - 1];
+          updatedCombinations.push([...combination, newNodeOrEdge.id, newNodeOrEdge.id]);
+          updatedCombinations.push([...combination, lastNode, newNodeOrEdge.id]);
+        }
+      }
+
+      // If the new element is an edge, check if it can be added to form new paths
+      if (newNodeOrEdge instanceof Relation) {
+        for (const combination of combinations) {
+          const lastNode = combination[combination.length - 1];
+          updatedCombinations.push([...combination, newNodeOrEdge.subject, newNodeOrEdge.id, newNodeOrEdge.object]);
+          updatedCombinations.push([...combination, lastNode, newNodeOrEdge.subject, newNodeOrEdge.id, newNodeOrEdge.object]);
+        }
+      }
+
+      return updatedCombinations;
+    }
+
+
+
   },
   watch: {
     showing: 'saveData',
@@ -945,8 +930,12 @@ export default {
     EventBus.$on('insertCellAfter', this.insertCellAfter)
 
     let sentences = this.getAllNodeCombinations(this.lan.concepts, this.lan.relations)
+    
+    this.lan.sentences = sentences
 
-    console.log(sentences)
+    for (const sentence in sentences) {
+      console.log(sentences[sentence].map(obj => this.getObjectById(obj).name))
+    }
   }
 };
 </script>

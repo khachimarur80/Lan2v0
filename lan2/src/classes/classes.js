@@ -12,6 +12,7 @@ class Lan {
     this.conditions =  []
     this.actions =  []
     this.tables = []
+    this.sentences = []
 
 
     this.selectingArea =  false
@@ -56,8 +57,8 @@ class Relation {
     this.objectType = 'relation'
     this.name = ''
     this.id = Math.floor(Math.random()*100000)
-    this.subject = null
-    this.object = null
+    this.subject = null //Destiny
+    this.object = null //Origin
     this.offsetX1 = 0
     this.offsetX2 = 0
     this.offsetY1 = 0
