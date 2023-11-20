@@ -1,75 +1,53 @@
 <template>
-  <div id="functions" @mousemove="functionMouseMove">
-    <svg id="generalFunctionsSVG" height="100%" width="100%">
-      <template v-for="condition in conditions">
-        <template v-for="(item, i) in condition.items">
-          <line 
-            v-if="!item[1]"
-            :x1="getObjectById(item[0]).x+getObjectById(item[0]).offsetX+'px'"
-            :y1="getObjectById(item[0]).y+getObjectById(item[0]).offsetY+'px'"
-            :x2="condition.x+condition.statementOffsetX+'px'"
-            :y2="condition.y+condition.statementOffsetY+'px'"
-            width="1"
-            stroke="yellow"
-            :key="i"
-          >
-          </line>
+  <div id="functions" class="pa-9">
+    <v-card height="100%" width="100%" flat outlined style="background: #121212; border-radius: 0px;" class="px-2 pt-2 overflow-auto">
+      <v-autocomplete
+        v-model="select"
+        :items="relations"
+        item-value="id"
+        :cache-items="false"
+        flat
+        hide-no-data
+        hide-details
+        dense
+        label="Search for object"
+        outlined
+        item-text="name"
+        @change="selectItem">
+        <template v-slot:item="{ item }">
+          <div color="red">{{ item.name }}</div>
         </template>
-      </template>
-      <template v-for="action in actions">
-        {{ action.condition }}
-        <line 
-          v-if="action.condition"
-          :x1="getObjectById(action.condition).x+getObjectById(action.condition).actionOffsetX+'px'"
-          :y1="getObjectById(action.condition).y+getObjectById(action.condition).actionOffsetY+'px'"
-          :x2="action.x+action.offsetX+'px'"
-          :y2="action.y+action.offsetY+'px'"
-          width="1"
-          stroke="orange"
-          :key="action.id"
-        >
-        </line>
-      </template>
-    </svg>
-    <div class="statement" v-for="statement in statements" :key="statement.id" :style="{ top : statement.y+'px', left : statement.x+'px'}" :data-id="statement.id" ref="statement" draggable="true">
-      <div class="statement-inner">
-        <input v-for="(item, i) in statement.items" :key="i" @mousedown.stop style="width: 0px" v-model="item[1]" :class="'statement-'+item[0]" @input="saveData">
-      </div>
-      <span class="node statement-node" @mousedown.stop>
-        <span class="node-inner" @click="createCondition">
-        </span>
-      </span>
-    </div>
-    <div class="condition" v-for="condition in conditions" :key="condition.id" :style="{ top : condition.y+'px', left : condition.x+'px'}" :data-id="condition.id" ref="condition" draggable="true">
-      <span class="node condition-node" @mousedown.stop>
-        <span class="node-inner" @click="createCondition">
-        </span>
-      </span>
-      <span class="node action-node" @mousedown.stop>
-        <span class="node-inner" @click="createAction">
-        </span>
-      </span>
-      <div class="condition-inner">
-        <div v-for="(item, i) in condition.items.slice(0,-1)" :key="i" style="width:100%;">
-          <div v-if="item[1]">
-            <input @mousedown.stop v-model="item[0]" :disabled="!item[1]">
-          </div>
-          <div v-else style="display: flex; justify-content: space-evenly; width:100%; gap: 5px">
-            <span v-for="(element, i) in getObjectById(item[0]).items" :key="i">{{ element[1] }}</span>
-          </div>
+      </v-autocomplete>
+      <v-divider class="my-2"></v-divider>
+      <v-card-title class="text-h3 text-center" v-if="selectedQuery">
+        {{ selectedQuery.name }}
+      </v-card-title>
+      <v-card-text v-if="selectedQuery">
+        <div class="text-h6">
+          Instances
         </div>
-      </div>
-    </div>
-    <!-- Una acción se puede volver en statement al final, y volver asi en un ciclo-->
-    <div :class="['action', evaluates(action) ? 'true' : 'false' ]" v-for="(action, i) in actions" :key="i" :style="{ top : action.y+'px', left : action.x+'px'}" :data-id="action.id" ref="action" draggable="true">
-      <span class="node action-node" @mousedown.stop>
-        <span class="node-inner" @click="createAction">
-      </span>
-      </span>
-      <div class="action-inner">
-        <input @mousedown.stop v-model="action.name">
-      </div>
-    </div>
+        <v-divider></v-divider><br>
+        <div class="text-body-1">Object : {{ getObjectById(selectedQuery.object).name }}</div>
+        <div class="text-body-1">Subject : {{ getObjectById(selectedQuery.subject).name }}</div>
+        <br><div class="text-h6">
+          Result
+        </div>
+        <v-divider></v-divider><br>
+        <v-text-field 
+          outlined
+          v-for="(output, i) in outputs" :key="i"
+          @keydown.enter="addOutput(i)"
+          @keydown.backspace="removeOutput(i)"
+          autofocus
+          dense
+          hide-details
+          hide-no-data
+          class="py-1"
+          :data-id="i"
+          >
+        </v-text-field>
+      </v-card-text>
+    </v-card>
   </div>
 </template>
 
@@ -81,20 +59,12 @@
     name: 'FunctionsView',
 
     data: () => ({
-      creatingCondition: [],
-      creatingAction: []
+      select: null,
+      selectedQuery: null,
+      outputs: [''],
     }),
 
     props: {
-      actions: {
-          required: true,
-      },
-      conditions: {
-          required: true,
-      },
-      statements: {
-          required: true,
-      },
       concepts: {
           required: true,
       },
@@ -107,390 +77,57 @@
     },
 
     methods: {
-      hoveringBox(element) {
-        let rect1 = element.getBoundingClientRect();
-        let elements
-        if (element.getAttribute("data-id")) {
-          elements = document.querySelectorAll('.wordObj:not([data-id="'+element.getAttribute("data-id")+'"] .wordObj)');
-        }
-        else {
-          elements = document.querySelectorAll('.wordObj')
-        }
-
-        for (let i = 0; i < elements.length; i++) {
-          let element2 = elements[i];
-          if (element2 === element) {
-              continue;
-          }
-          let rect2 = element2.getBoundingClientRect();
-          let overlaps = !(
-            rect1.right < rect2.left ||
-            rect1.left > rect2.right ||
-            rect1.bottom < rect2.top ||
-            rect1.top > rect2.bottom
-          );
-          if (overlaps) {
-            return element2;
-          }
-        }
-        return null;
+      addOutput(index) {
+        this.outputs.splice(index + 1, 0, '')
       },
-      dragConcept(word) {
-        const vm = this;
-        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-        let wordObj = this.getObjectById(word.getAttribute('data-id'))
-        let original = [parseInt(wordObj.x), parseInt(wordObj.y)];
-      
-        word.onmousedown = dragMouseDown;
-
-        function dragMouseDown(e) {
-          e.stopPropagation()
-
-          e = e || window.event;
-          e.preventDefault();
-          pos3 = e.clientX;
-          pos4 = e.clientY;
-          document.onmouseup = closeDragElement;
-          document.onmousemove = elementDrag;
-        }
-
-        function elementDrag(e) {
-          let wordObj = vm.getObjectById(word.getAttribute('data-id'))
-
-          e = e || window.event;
-          e.preventDefault();
-
-          pos1 = pos3 - (e.clientX);
-          pos2 = pos4 - (e.clientY);
-          pos3 = e.clientX;
-          pos4 = e.clientY;
-
-          wordObj.y = (word.offsetTop - pos2)
-          wordObj.x = (word.offsetLeft - pos1)
-
-          if (vm.hoveringBox(word)) {
-            word.classList.add('hovering')
-            word.setAttribute('data-hover', vm.hoveringBox(word).getAttribute('data-id'))
-          }
-          else {
-            word.classList.remove('hovering')
-          }
-        }
-
-        function closeDragElement() {
-          EventBus.$emit('saveData')
-
-          document.onmouseup = null;
-          document.onmousemove = null;
-
-          if (word.classList.contains('hovering')) {
-            wordObj.x = original[0]
-            wordObj.y = original[1]
-
-            word.setAttribute('data-hover', '')
-            word.classList.remove('hovering')
-          }
-          else {
-            original = [wordObj.x, wordObj.y];
-          }
+      removeOutput(index) {
+        if (this.outputs.length > 1) {
+          this.outputs.splice(index)
+          document.querySelector("[data-id='"+(index-1)+"']").focus()
         }
       },
       getObjectById(id) {
-        for(let i=0; i<this.statements.length; i++) {
-          if (this.statements[i].id==id) {
-            return this.statements[i]
+        for(let i=0; i<this.relations.length; i++) {
+          if (this.relations[i].id==id) {
+            return this.relations[i]
           }
         }
-        for(let i=0; i<this.actions.length; i++) {
-          if (this.actions[i].id==id) {
-            return this.actions[i]
+        for(let i=0; i<this.concepts.length; i++) {
+          if (this.concepts[i].id==id) {
+            return this.concepts[i]
           }
         }
-        for(let i=0; i<this.conditions.length; i++) {
-          if (this.conditions[i].id==id) {
-            return this.conditions[i]
+        for(let i=0; i<this.categories.length; i++) {
+          if (this.categories[i].id==id) {
+            return this.categories[i]
           }
         }
-      },
-      createAction(event) {
-        let element = event.target
-
-        let conceptTarget = this.getObjectById(element.parentElement.parentElement.getAttribute('data-id'))
-
-        if (!this.creatingAction[0]) {
-          let coords = {
-            'x': event.target.parentElement.getBoundingClientRect().left,
-            'y': event.target.parentElement.getBoundingClientRect().top,
-            'height': event.target.parentElement.getBoundingClientRect().height,
-            'width': event.target.parentElement.getBoundingClientRect().width,
-          }
-
-          element.parentElement.classList.add('relation-node')
-          this.creatingAction.push([conceptTarget, coords])
-        }
-        else {
-          let coords = {
-            'x': event.target.parentElement.getBoundingClientRect().left,
-            'y': event.target.parentElement.getBoundingClientRect().top,
-            'height': event.target.parentElement.getBoundingClientRect().height,
-            'width': event.target.parentElement.getBoundingClientRect().width,
-          }
-
-          element.parentElement.classList.add('relation-node')
-
-          conceptTarget.condition = this.creatingAction[0][0].id
-
-          this.creatingAction[0][0].actionOffsetX = -this.creatingAction[0][0].x + this.creatingAction[0][1].x + this.creatingAction[0][1].width/2
-          this.creatingAction[0][0].actionOffsetY = -this.creatingAction[0][0].y + this.creatingAction[0][1].y + this.creatingAction[0][1].height/2 - 56
-
-          conceptTarget.offsetX = -conceptTarget.x + coords.x + coords.width/2
-          conceptTarget.offsetY = -conceptTarget.y + coords.y + coords.height/2 - 56
-
-          let line = document.getElementById('creating-action-line');
-          line.remove()
-
-          this.creatingAction = []
-        }
-      },
-      createCondition(event) {
-        let element = event.target
-
-        let conceptTarget = this.getObjectById(element.parentElement.parentElement.getAttribute('data-id'))
-
-        if (!this.creatingCondition[0]) {
-          let coords = {
-            'x': event.target.parentElement.getBoundingClientRect().left,
-            'y': event.target.parentElement.getBoundingClientRect().top,
-            'height': event.target.parentElement.getBoundingClientRect().height,
-            'width': event.target.parentElement.getBoundingClientRect().width,
-          }
-
-          element.parentElement.classList.add('relation-node')
-          this.creatingCondition.push([conceptTarget, coords])
-        }
-        else {
-          let coords = {
-            'x': event.target.parentElement.getBoundingClientRect().left,
-            'y': event.target.parentElement.getBoundingClientRect().top,
-            'height': event.target.parentElement.getBoundingClientRect().height,
-            'width': event.target.parentElement.getBoundingClientRect().width,
-          }
-
-          element.parentElement.classList.add('relation-node')
-
-          conceptTarget.items.push([this.creatingCondition[0][0].id, false])
-          conceptTarget.items.push(['and', true])
-
-          let line = document.getElementById('creating-condition-line');
-          line.remove()
-
-          this.creatingCondition[0][0].offsetX = -this.creatingCondition[0][0].x + this.creatingCondition[0][1].x + this.creatingCondition[0][1].width/2
-          this.creatingCondition[0][0].offsetY = -this.creatingCondition[0][0].y + this.creatingCondition[0][1].y + this.creatingCondition[0][1].height/2 - 56
-
-          conceptTarget.statementOffsetX = -conceptTarget.x + coords.x + coords.width/2
-          conceptTarget.statementOffsetY = -conceptTarget.y + coords.y + coords.height/2 - 56
-
-          this.creatingCondition = []
-        }
-      },
-      functionMouseMove(event) {
-        if (this.creatingCondition[0]) {
-          const functions = document.getElementById('functions').getBoundingClientRect()
-          if (document.getElementById('creating-condition-line')) {
-            let line = document.getElementById('creating-condition-line');
-            line.setAttributeNS(null, 'x2', event.x - functions.left);
-            line.setAttributeNS(null, 'y2', event.y - functions.top);
-          }
-          else {
-            let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.id = 'creating-condition-line'
-
-            line.setAttributeNS(null, 'x1', this.creatingCondition[0][1].x + this.creatingCondition[0][1].width/2);
-            line.setAttributeNS(null, 'y1', this.creatingCondition[0][1].y + this.creatingCondition[0][1].height/2 - 56);
-            line.setAttributeNS(null, 'x2', event.x - functions.left);
-            line.setAttributeNS(null, 'y2', event.y - functions.top);
-            line.setAttributeNS(null, 'stroke', 'yellow');
-            line.setAttributeNS(null, 'stroke-width', '1');
-
-            document.getElementById('generalFunctionsSVG').appendChild(line)
-          }
-        }
-        else if (this.creatingAction[0]) {
-          const functions = document.getElementById('functions').getBoundingClientRect()
-          if (document.getElementById('creating-action-line')) {
-            let line = document.getElementById('creating-action-line');
-            line.setAttributeNS(null, 'x2', event.x - functions.left);
-            line.setAttributeNS(null, 'y2', event.y - functions.top);
-          }
-          else {
-            let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.id = 'creating-action-line'
-
-            line.setAttributeNS(null, 'x1', this.creatingAction[0][1].x + this.creatingAction[0][1].width/2);
-            line.setAttributeNS(null, 'y1', this.creatingAction[0][1].y + this.creatingAction[0][1].height/2 - 56);
-            line.setAttributeNS(null, 'x2', event.x - functions.left);
-            line.setAttributeNS(null, 'y2', event.y - functions.top);
-            line.setAttributeNS(null, 'stroke', 'orange');
-            line.setAttributeNS(null, 'stroke-width', '1');
-
-            document.getElementById('generalFunctionsSVG').appendChild(line)
-          }
-        }
-      },
-      updateStatementsDrag() {
-        this.$nextTick(()=>{
-          if (this.$refs.statement) {
-            this.$refs.statement.forEach((statementElement) => {
-              this.dragConcept(statementElement)
-            })
-          }
-        })
-      },
-      updateActionsDrag() {
-        this.$nextTick(()=>{
-          if (this.$refs.action) {
-              this.$refs.action.forEach((actionElement) => {
-                this.dragConcept(actionElement)
-              })
-            }
-        })
-      },
-      updateConditionsDrag() {
-        this.$nextTick(()=>{
-          if (this.$refs.condition) {
-              this.$refs.condition.forEach((conditionElement) => {
-                this.dragConcept(conditionElement)
-              })
-            }
-        })
       },
       saveData() {
         EventBus.$emit('saveData')
-      }
+      },
+      selectItem() {
+        this.selectedQuery = this.getObjectById(this.select)
+        console.log(1)
+        this.select = null
+      },
+
     },
 
     computed: {
-      evaluates() {
-        return (action) => {
-        if (action.condition) {
-          let values = []
-          let condition = this.getObjectById(action.condition)
-
-          for (let i=0; i<condition.items.length; i++) {
-            let item = condition.items[i]
-            if (item[1]) {
-              values.push(item[0])
-            }
-            else {
-              let statement = this.getObjectById(item[0])
-              let type = statement.type.toString()
-
-              if (type=='[]') {
-                let flag = false
-                for (let j=0; j<this.concepts.length; j++) {
-                  if (this.concepts[j].name == statement.items[0][1]) {
-                    flag = true
-                    break
-                  }
-                }
-                values.push(flag)
-              }
-              if (type=='#') {
-                let flag = false
-                for (let j=0; j<this.categories.length; j++) {
-                  if (this.categories[j].name == statement.items[0][1]) {
-                    flag = true
-                    console.log(2)
-                    break
-                  }
-                }
-                values.push(flag)
-              }
-              if (type=='[]--[]') {
-                let flag = false
-                let subject = null
-                let object = null
-                let relation = null
-
-                for (let j=0; j<this.concepts.length; j++) {
-                  if (this.concepts[j].name == statement.items[0][1]) {
-                    subject = this.concepts[j].id
-                    break
-                  }
-                }
-                for (let j=0; j<this.relations.length; j++) {
-                  if (this.relations[j].name == statement.items[1][1]) {
-                    relation = this.relations[j]
-                    break
-                  }
-                }
-                for (let j=0; j<this.concepts.length; j++) {
-                  if (this.concepts[j].name == statement.items[2][1]) {
-                    object = this.concepts[j].id
-                    break
-                  }
-                }
-                if (relation.subject==object && relation.object===subject) {
-                  flag = true
-                }
-                values.push(flag)
-              }
-              if (type=='#--[]') {
-                let flag = false
-                values.push(flag)
-              }
-              if (type=='#--#') {
-                let flag = false
-                values.push(flag)
-              }
-            }
-          }
-
-          let result = values[0];
-
-          for (let i = 1; i < values.length-1; i += 2) {
-            const operator = values[i];
-            const operand = values[i + 1];
-
-            if (operator === 'and') {
-              result = result && operand;
-            } else if (operator === 'or') {
-              result = result || operand;
-            }
-          }
-          return result
-        }
-        return false
-        }
-      }
+      
     },
 
     created() {
-      EventBus.$on('updateActionsDrag', this.updateActionsDrag)
-      EventBus.$on('updateConditionsDrag', this.updateConditionsDrag)
-      EventBus.$on('updateStatementsDrag', this.updateStatementsDrag)
-
-      setTimeout(()=>{
-        if (this.$refs.statement) {
-          this.$refs.statement.forEach((statementElement) => {
-            this.dragConcept(statementElement)
-          })
-        }
-      }, 500)
-      setTimeout(()=>{
-        if (this.$refs.condition) {
-          this.$refs.condition.forEach((conditionElement) => {
-            this.dragConcept(conditionElement)
-          })
-        }
-      }, 500)
-      setTimeout(()=>{
-        if (this.$refs.action) {
-            this.$refs.action.forEach((actionElement) => {
-              this.dragConcept(actionElement)
-            })
-          }
-      }, 500)
+      
     }
   }
 </script>
+<style scoped>
+  #functions {
+    height: calc(100% - 40px);
+    width: 100h;
+    position: relative;
+    overflow: scroll;
+  }
+</style>

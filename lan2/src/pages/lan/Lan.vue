@@ -132,13 +132,10 @@
               :sentences="lan.sentences"
             />
             <FunctionsView 
-            v-if="lan.showing=='functions'"
+            v-if="lan.showing=='function'"
             :concepts="lan.concepts"
             :relations="lan.relations"
             :categories="lan.categories"
-            :statements="lan.statements"
-            :actions="lan.actions"
-            :conditions="lan.conditions"
             />
           </div>
         </div>
