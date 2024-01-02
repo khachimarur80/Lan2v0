@@ -295,13 +295,14 @@ export default {
 
       this.saveData()
     },
-    appendLine(lineIndex, newLine) {
-      this.activeTab.contents.splice(lineIndex + 1, 0, newLine)
-
+    appendLine(lineIndex, insertingLine) {
+      console.log(this.activeTab.contents)
+      this.activeTab.contents.splice(lineIndex + 1, 0, insertingLine)
+      console.log(this.activeTab.contents)
       let table = this.getTable()
 
       if (table) {
-        table.contents.splice(lineIndex + 1, 0, newLine.contents)
+        table.contents.splice(lineIndex + 1, 0, insertingLine.contents)
       }
 
       this.saveData()

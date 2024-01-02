@@ -1,15 +1,16 @@
 <template>
   <div id="text">
-    <v-card width="100%" height="100%"  class="pa-1 pt-3 text-content" style="border-radius: 0px !important;" elevation="0">
+    <v-card width="100%" height="100%"  class="pa-1 pt-3 text-content" style="border-radius: 0px !important; background: #161616;" elevation="0" outlined>
       <div 
         style="height: 100%; width: 100%; outline: none; color: transparent;" 
         @click="lineClick"
         @keyup="lineKeyup" 
         @keydown="lineKeydown"
-        @dblclick="lineDoubleClick"  
+        @dblclick="lineDoubleClick"
+        id="text-content"
         contenteditable 
         >
-        <div :class="['line', currentLine==i ? 'currentLine' : '',  blockType(line.type)]" v-for="(line, i) in file.contents" :key="file.name + i" contenteditable="false">
+        <div :class="['line', currentLine==i ? 'currentLine' : '',  blockType(line.type)]" v-for="(line, i) in file.contents" :key="file.name + i">
           <div class="references" contenteditable="false">
             <v-btn icon text color="amber" dense small>
               <v-icon>
@@ -393,7 +394,7 @@ export default {
                 }
 
                 if (bug) {
-                  alert('INCONGRUENCE ON LINE '+i+' AT WORD '+j+'!')
+                  //alert('INCONGRUENCE ON LINE '+i+' AT WORD '+j+'!')
                 }
                 else if (!exists) {
                   alert('NEW RELATION!')
@@ -459,199 +460,239 @@ export default {
     },
 
 
-    lineKeyup(event) {
-      if (event.key==' ' || event.key=='Enter') {
-        event.preventDefault()
-      }
-      else {
-        let currentLine = document.querySelector('div[data-num="'+this.currentLine+'"]')
-        if (currentLine) {
-          EventBus.$emit('updateLine', this.currentLine, currentLine.innerText)
-        }
 
-        this.$emit('saveContents')
+    lineKeyup(event) {
+      event.preventDefault()
+      let currentLine = document.querySelector('div[data-num="'+this.currentLine+'"]')
+      if (currentLine) {
+        EventBus.$emit('updateLine', this.currentLine, currentLine.innerText)
       }
+      this.$emit('saveContents')
     },
     lineKeydown(event) {
       let currentLine = document.querySelector('div[data-num="'+this.currentLine+'"]')
+      let selectedLines = findSelectedDivs(document.getElementById('text-content'), window.getSelection().getRangeAt(0)).filter(e => e.classList.contains('line'))
+      selectedLines = selectedLines.map(e => e.querySelector('.line-contents'))
 
-      if (event.key==' ') {
-        const sel = window.getSelection();
-        const node = sel.focusNode;
-        const offset = sel.focusOffset;
-        const pos = getCursorPosition(currentLine, node, offset, { pos: 0, done: false });
-        if (offset === 0) pos.pos += 0.5;
+      if (selectedLines.length===1) {
+        if (event.key=='Enter') {
+          event.preventDefault()
 
-        this.parseConcepts([currentLine])
-
-        sel.removeAllRanges();
-        const range = setCursorPosition(currentLine, document.createRange(), {
-          pos: pos.pos,
-          done: false,
-        });
-        range.collapse(true);
-        sel.addRange(range);
-      }
-      else if (event.key=='Enter') {
-        event.preventDefault()
-
-        let sel = window.getSelection();
-        let range = sel.getRangeAt(0);
-        let startOffset = range.startOffset;
-        let startContainer = range.startContainer;
+          let sel = window.getSelection();
+          let range = sel.getRangeAt(0);
+          let startOffset = range.startOffset;
+          let startContainer = range.startContainer;
 
 
-        if (startOffset === currentLine.innerText.length) {
-          let newLine = new Line()
-          EventBus.$emit('appendLine', this.currentLine, newLine)
-          //this.file.contents.splice(this.currentLine + 1, 0, newLine)
+          if (startOffset === currentLine.innerText.length) {
+            let newLine = new Line()
 
-          this.$nextTick(()=>{
-            const newTarget = document.querySelector('div[data-num="'+(this.currentLine+1)+'"]')
+            EventBus.$emit('appendLine', this.currentLine, newLine)
 
-            sel.removeAllRanges();
-            const range = setCursorPosition(newTarget, document.createRange(), {
-              pos: 0,
-              done: false,
-            });
-            range.collapse(true);
-            sel.addRange(range);
 
-            this.currentLine += 1
-          })
-        }
-        
-        else {
-          let oldLineText = startContainer.textContent.slice(0, startOffset)
-          let newLineText = startContainer.textContent.slice(startOffset, startContainer.textContent.length)
-
-          EventBus.$emit('updateLine', this.currentLine, oldLineText)
-
-          currentLine.innerText = oldLineText
-
-          let newLine = new Line()
-          newLine.contents = newLineText
-
-          EventBus.$emit('appendLine', this.currentLine, newLine)
-
-          this.$nextTick(()=>{
-            const newLine = document.querySelector('div[data-num="'+(this.currentLine+1)+'"]')
-
-            sel.removeAllRanges();
-            const range = setCursorPosition(newLine, document.createRange(), {
-              pos: 0,
-              done: false,
-            });
-            range.collapse(true);
-            sel.addRange(range);
-
-            this.currentLine += 1
-          })
-        }
-      }
-      else if (event.key=='Backspace') {
-        let sel = window.getSelection();
-        let range = sel.getRangeAt(0);
-        let startOffset = range.startOffset;
-
-        if (this.file.contents.length>1) {
-            if (startOffset === 0) {
-              event.preventDefault()
-          
-              const newTarget = document.querySelector('div[data-num="'+(this.currentLine-1).toString()+'"]')
-
-              let oldPos = newTarget.innerText.length
-
-              let newContents = this.file.contents[this.currentLine-1].contents + this.file.contents[this.currentLine].contents
-              EventBus.$emit('updateLine', this.currentLine-1, newContents)
-
-              newTarget.innerText += this.file.contents[this.currentLine].contents
+            this.$nextTick(()=>{
+              const newTarget = document.querySelector('div[data-num="'+(this.currentLine+1)+'"]')
 
               sel.removeAllRanges();
               const range = setCursorPosition(newTarget, document.createRange(), {
-                pos: oldPos,
+                pos: 0,
                 done: false,
               });
               range.collapse(true);
               sel.addRange(range);
 
-              EventBus.$emit('removeLine', this.currentLine)
+              this.currentLine += 1
 
-              this.currentLine -= 1
-            } 
-        }
-      }
-      else if (event.key=='ArrowUp') {
-        event.preventDefault()
-
-        let num = parseInt(currentLine.getAttribute('data-num'))
-        if (num>0) {
-          this.currentLine -= 1
-
-          let target = document.querySelector('div[data-num="'+(num-1)+'"]')
-
-          const sel = window.getSelection();
-          const node = sel.focusNode;
-          const offset = sel.focusOffset;
-          const pos = getCursorPosition(currentLine, node, offset, { pos: 0, done: false });
-          if (offset === 0) pos.pos += 0.5;
-
-
-          sel.removeAllRanges();
-          const range = setCursorPosition(target, document.createRange(), {
-            pos: Math.min(pos.pos, target.innerText.length),
-            done: false,
-          });
-          range.collapse(true);
-          sel.addRange(range);
-        }
-      }
-      else if (event.key=='ArrowDown') {
-        event.preventDefault()
-
-        let num = parseInt(currentLine.getAttribute('data-num'))
-        if (num<this.file.contents.length-1) {
-          this.currentLine += 1
-
-          let target = document.querySelector('div[data-num="'+(num+1)+'"]')
-
-          const sel = window.getSelection();
-          const node = sel.focusNode;
-          const offset = sel.focusOffset;
-          const pos = getCursorPosition(currentLine, node, offset, { pos: 0, done: false });
-          if (offset === 0) pos.pos += 0.5;
-
-
-          sel.removeAllRanges();
-          const range = setCursorPosition(target, document.createRange(), {
-            pos: Math.min(pos.pos, target.innerText.length),
-            done: false,
-          });
-          range.collapse(true);
-          sel.addRange(range);
-        }
-      }
-      else if (event.key === "#") {
-        event.preventDefault()
-        let currentLine = this.file.contents[this.currentLine]
-        if (currentLine.type=='body') {
-          currentLine.type = 'h1'
-        }
-        else if (currentLine.type.startsWith('h')) {
-          let type = currentLine.type
-          let num = parseInt(type.slice(1, type.length))
-
-          if (num<6) {
-            currentLine.type = 'h'+(num + 1)
+            })
           }
+          
           else {
-            currentLine.type = 'body'
+            let oldLineText = startContainer.textContent.slice(0, startOffset)
+            let newLineText = startContainer.textContent.slice(startOffset, startContainer.textContent.length)
+
+            EventBus.$emit('updateLine', this.currentLine, oldLineText)
+
+            currentLine.innerText = oldLineText
+
+            let newLine = new Line()
+            newLine.contents = newLineText
+
+            EventBus.$emit('appendLine', this.currentLine, newLine)
+
+            this.$nextTick(()=>{
+              const newLine = document.querySelector('div[data-num="'+(this.currentLine+1)+'"]')
+
+              sel.removeAllRanges();
+              const range = setCursorPosition(newLine, document.createRange(), {
+                pos: 0,
+                done: false,
+              });
+              range.collapse(true);
+              sel.addRange(range);
+
+              this.currentLine += 1
+            })
           }
         }
+        else if (event.key=='Backspace') {
+          let sel = window.getSelection();
+          let range = sel.getRangeAt(0);
+          let startOffset = range.startOffset;
 
-        this.$emit('saveContents')
+          if (this.file.contents.length>1) {
+              if (startOffset === 0) {
+                event.preventDefault()
+            
+                const newTarget = document.querySelector('div[data-num="'+(this.currentLine-1).toString()+'"]')
+
+                let oldPos = newTarget.innerText.length
+
+                let newContents = this.file.contents[this.currentLine-1].contents + this.file.contents[this.currentLine].contents
+                EventBus.$emit('updateLine', this.currentLine-1, newContents)
+
+                newTarget.innerText += this.file.contents[this.currentLine].contents
+
+                sel.removeAllRanges();
+                const range = setCursorPosition(newTarget, document.createRange(), {
+                  pos: oldPos,
+                  done: false,
+                });
+                range.collapse(true);
+                sel.addRange(range);
+
+                EventBus.$emit('removeLine', this.currentLine)
+
+                this.currentLine -= 1
+              } 
+          }
+        }
+        else if (event.key=='ArrowUp') {
+          event.preventDefault()
+
+          let num = parseInt(currentLine.getAttribute('data-num'))
+          if (num>0) {
+            this.currentLine -= 1
+
+            let target = document.querySelector('div[data-num="'+(num-1)+'"]')
+
+            const sel = window.getSelection();
+            const node = sel.focusNode;
+            const offset = sel.focusOffset;
+            const pos = getCursorPosition(currentLine, node, offset, { pos: 0, done: false });
+            if (offset === 0) pos.pos += 0.5;
+
+
+            sel.removeAllRanges();
+            const range = setCursorPosition(target, document.createRange(), {
+              pos: Math.min(pos.pos, target.innerText.length),
+              done: false,
+            });
+            range.collapse(true);
+            sel.addRange(range);
+          }
+        }
+        else if (event.key=='ArrowDown') {
+          event.preventDefault()
+
+          let num = parseInt(currentLine.getAttribute('data-num'))
+          if (num<this.file.contents.length-1) {
+            this.currentLine += 1
+
+            let target = document.querySelector('div[data-num="'+(num+1)+'"]')
+
+            const sel = window.getSelection();
+            const node = sel.focusNode;
+            const offset = sel.focusOffset;
+            const pos = getCursorPosition(currentLine, node, offset, { pos: 0, done: false });
+            if (offset === 0) pos.pos += 0.5;
+
+
+            sel.removeAllRanges();
+            const range = setCursorPosition(target, document.createRange(), {
+              pos: Math.min(pos.pos, target.innerText.length),
+              done: false,
+            });
+            range.collapse(true);
+            sel.addRange(range);
+          }
+        }
+        else if (event.key === "#") {
+          event.preventDefault()
+          let currentLine = this.file.contents[this.currentLine]
+          if (currentLine.type=='body') {
+            currentLine.type = 'h1'
+          }
+          else if (currentLine.type.startsWith('h')) {
+            let type = currentLine.type
+            let num = parseInt(type.slice(1, type.length))
+
+            if (num<6) {
+              currentLine.type = 'h'+(num + 1)
+            }
+            else {
+              currentLine.type = 'body'
+            }
+          }
+
+          this.$emit('saveContents')
+        }
+        else if (event.key === ' ') {
+          const sel = window.getSelection();
+          const node = sel.focusNode;
+          const offset = sel.focusOffset;
+          const pos = getCursorPosition(currentLine, node, offset, { pos: 0, done: false });
+          if (offset === 0) pos.pos += 0.5;
+
+          this.parseConcepts([currentLine])
+
+          sel.removeAllRanges();
+          const range = setCursorPosition(currentLine, document.createRange(), {
+            pos: pos.pos,
+            done: false,
+          });
+          range.collapse(true);
+          sel.addRange(range);
+        }
+      }
+      else {
+        event.preventDefault()
+
+        if (event.key=='Backspace') {
+          console.log('Delete')
+          const sel = window.getSelection();
+          const range = sel.getRangeAt(0);
+          const firstLine = range.startContainer;
+          const lastLine = range.endContainer;
+          const firstLineIndex = range.startOffset + selectedLines[0].innerText.length - firstLine.length;
+          const lastLineIndex = range.endOffset + selectedLines[selectedLines.length-1].innerText.length - lastLine.length;
+
+          let lastLineText = selectedLines[selectedLines.length-1].innerText.slice(lastLineIndex)
+
+          let newText = selectedLines[0].innerText.slice(0, firstLineIndex) + lastLineText
+
+          this.currentLine = parseInt(selectedLines[0].getAttribute('data-num'))
+
+          selectedLines[0].innerText = newText
+
+          for (let i=1; i<selectedLines.length; i++) {
+            console.log(document.querySelector('div[data-num="'+(this.currentLine+i)+'"]'))
+            EventBus.$emit('removeLine', this.currentLine+i)
+          }
+
+          sel.removeAllRanges()
+        }
+        else if (event.key=='Enter') {
+          console.log('New line replace')
+        }
+        else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
+          console.log('Paste')
+        }
+        else {
+          console.log('Replace')
+        }
       }
     },
+
     lineClick(event) {
       event.preventDefault()
       if (this.file.contents.length==0) {

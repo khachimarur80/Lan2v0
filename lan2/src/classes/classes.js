@@ -49,6 +49,8 @@ class Concept {
     //Attributes for easier parsing
     this.relations = []
     this.categories = []
+
+    
   }
 }
 
